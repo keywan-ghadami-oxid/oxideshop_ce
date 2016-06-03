@@ -280,7 +280,10 @@ namespace OxidEsales\Eshop\Core {
         {
             $path = $this->_getShopBasePath() . $this->_getImageUri();
 
-            return str_replace($this->_getImageName(), "nopic.jpg", $path);
+            // Correction for Bug:6291 - Changing the required nopic image format to the format of the requested image.
+            $sType = $this->_getImageType();
+
+            return str_replace($this->_getImageName(), "nopic.".$sType, $path);
         }
 
         /**
