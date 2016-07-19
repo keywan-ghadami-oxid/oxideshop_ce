@@ -1,0 +1,15 @@
+{
+    "name": "oxid-esales/migration-facts",
+    "description": "OXID eShop database migrations",
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "OXID eSales",
+            "email": "info@oxid-esales.com"
+        }
+    ],
+    "require": {
+        "oxid-esales/edition-facts": "*"
+    },
+    "bin": ["./oe-migration_facts"]
+}

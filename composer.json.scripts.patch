@@ -1,0 +1,19 @@
+--- composer.json	2016-07-22 17:52:33.000000000 +0200
++++ composer.json_	2016-07-22 17:52:29.000000000 +0200
+@@ -31,11 +31,14 @@
+     "prefer-stable": true,
+     "scripts": {
+         "post-install-cmd": [
+-            "Incenteev\\ParameterHandler\\ScriptHandler::buildParameters"
++            "Incenteev\\ParameterHandler\\ScriptHandler::buildParameters",
++            "@migrate-db"
+         ],
+         "post-update-cmd": [
+             "Incenteev\\ParameterHandler\\ScriptHandler::buildParameters"
+-        ]
++        ],
++        "reset-db": "reset-shop",
++        "migrate-db": "oe-facts oe-db_migrate"
+     },
+     "extra": {
+         "incenteev-parameters": {

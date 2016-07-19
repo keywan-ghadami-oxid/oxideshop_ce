@@ -1,0 +1,15 @@
+{
+    "name": "oxid-esales/edition-facts",
+    "description": "OXID eShop edition getter",
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "OXID eSales",
+            "email": "info@oxid-esales.com"
+        }
+    ],
+    "require": {
+        "oxid-esales/facts": "*"
+    },
+    "bin": ["./oe-edition_facts"]
+}

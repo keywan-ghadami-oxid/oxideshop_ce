@@ -1,0 +1,20 @@
+#!/bin/bash
+
+[ -z $ESHOP_FACTS ] && echo "Please run this script through oe-facts, e.g. ./oe-facts $0" && exit 1
+. $ESHOP_VENDOR_BIN_PATH/oe-migration_facts
+
+[ ! -z "$ESHOP_DOCTRINE_MIGRATION_WRAPPER_BIN_PATH" ] || \
+    ESHOP_DOCTRINE_MIGRATION_WRAPPER_BIN_PATH=$(readlink -fn "$ESHOP_VENDOR_BIN_PATH/oe-doctrine_migration")
+
+[ ! -z "$ESHOP_PHINX_MIGRATION_WRAPPER_BIN_PATH" ] || \
+    ESHOP_PHINX_MIGRATION_WRAPPER_BIN_PATH=$(readlink -fn "$ESHOP_VENDOR_BIN_PATH/oe-phinx_migration")
+
+if [ ! -z "$VERBOSE" ] || [ ! -z "$ESHOP_VERBOSE_MIGRATION_FACTS"] ; then
+    echo "Variables from: $(basename $BASH_SOURCE)"
+    echo "ESHOP_DOCTRINE_MIGRATION_WRAPPER_BIN_PATH: $ESHOP_DOCTRINE_MIGRATION_WRAPPER_BIN_PATH"
+    echo "ESHOP_PHINX_MIGRATION_WRAPPER_BIN_PATH: $ESHOP_PHINX_MIGRATION_WRAPPER_BIN_PATH"
+    echo ""
+fi
+
+[ -f $ESHOP_DOCTRINE_MIGRATION_WRAPPER_BIN_PATH ] && $ESHOP_DOCTRINE_MIGRATION_WRAPPER_BIN_PATH :migrate -n && exit 0
+[ -f $ESHOP_PHINX_MIGRATION_WRAPPER_BIN_PATH ] && $ESHOP_PHINX_MIGRATION_WRAPPER_BIN_PATH migrate && exit 0

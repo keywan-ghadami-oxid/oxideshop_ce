@@ -1,0 +1,19 @@
+{
+    "name": "oxid-esales/phinx-migration-wrapper",
+    "description": "OXID eShop database migrations using phinx",
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "OXID eSales",
+            "email": "info@oxid-esales.com"
+        }
+    ],
+    "require": {
+        "robmorgan/phinx": "^0.6.3",
+        "oxid-esales/migration-facts": "*"
+    },
+    "replace": {
+        "oxid-esales/doctrine-migration-wrapper": "*"
+    },
+    "bin": ["./oe-phinx_migration"]
+}

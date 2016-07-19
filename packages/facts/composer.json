@@ -1,0 +1,13 @@
+{
+    "name": "oxid-esales/facts",
+    "description": "OXID eShop facts",
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "OXID eSales",
+            "email": "info@oxid-esales.com"
+        }
+    ],
+    "require": {},
+    "bin": ["./oe-facts"]
+}

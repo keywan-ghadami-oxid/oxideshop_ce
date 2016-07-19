@@ -1,0 +1,4 @@
+name: Oxid Migrations (Project)
+migrations_namespace: OxidMigrationsProject
+table_name: oxproject_migrations
+migrations_directory: project_data

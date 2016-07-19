@@ -1,0 +1,16 @@
+{
+    "name": "oxid-esales/doctrine-migration-wrapper",
+    "description": "OXID eShop database migrations using doctrine",
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "OXID eSales",
+            "email": "info@oxid-esales.com"
+        }
+    ],
+    "require": {
+        "doctrine/migrations": "^1.4.1",
+        "oxid-esales/migration-facts": "*"
+    },
+    "bin": ["./oe-doctrine_migration"]
+}

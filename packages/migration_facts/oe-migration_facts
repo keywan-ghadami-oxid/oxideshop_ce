@@ -1,0 +1,22 @@
+#!/bin/bash
+
+[ -z $ESHOP_FACTS ] && echo "Please run this script through oe-facts, e.g. ./oe-facts $0" && exit 1
+
+[ ! -z $ESHOP_CE_MIGRATION_PATH ] || \
+    ESHOP_CE_MIGRATION_PATH=$(readlink -fn "$ESHOP_SOURCE_PATH/migration")
+
+if [ $ESHOP_EDITION == "PE" ] || [ $ESHOP_EDITION == "EE" ] ; then
+   [ ! -z $ESHOP_PE_MIGRATION_PATH ] || ESHOP_PE_MIGRATION_PATH=$(readlink -fn "$ESHOP_PE_ROOT_PATH/migration")
+fi
+
+if [ $ESHOP_EDITION == "EE" ] ; then
+   [ ! -z $ESHOP_EE_MIGRATION_PATH ] || ESHOP_EE_MIGRATION_PATH=$(readlink -fn "$ESHOP_EE_ROOT_PATH/migration")
+fi
+
+if [ ! -z "$VERBOSE" ] || [ ! -z "$ESHOP_VERBOSE_MIGRATION_FACTS"] ; then
+    echo "Variables from: $(basename $BASH_SOURCE)"
+    echo "ESHOP_CE_MIGRATION_PATH: $ESHOP_CE_MIGRATION_PATH"
+    echo "ESHOP_PE_MIGRATION_PATH: $ESHOP_PE_MIGRATION_PATH"
+    echo "ESHOP_EE_MIGRATION_PATH: $ESHOP_EE_MIGRATION_PATH"
+    echo ""
+fi
