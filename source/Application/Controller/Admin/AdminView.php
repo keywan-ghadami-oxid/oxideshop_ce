@@ -286,7 +286,8 @@ class AdminView extends \oxView
 
         if ($sShopID = $myConfig->getShopId()) {
             $sQ = "select oxversion from oxshops where oxid = '$sShopID' ";
-            $sVersion = oxDb::getDb()->getOne($sQ, false, false);
+            // We force reading from master to prevent issues with slow replications or open transactions (see ESDEV-3804).
+            $sVersion = oxDb::getMaster()->getOne($sQ);
         }
 
         $sVersion = preg_replace("/(^[^0-9]+)(.+)$/", "$2", $sVersion);
@@ -525,7 +526,8 @@ class AdminView extends \oxView
             if (false !== $iEnglishId) {
                 $sViewName = getViewName("oxcountry", $iEnglishId);
                 $sQ = "select oxtitle from {$sViewName} where oxisoalpha2 = " . oxDb::getDb()->quote($sCountryCode);
-                $sCountryName = oxDb::getDb()->getOne($sQ, false, false);
+                // We force reading from master to prevent issues with slow replications or open transactions (see ESDEV-3804).
+                $sCountryName = oxDb::getMaster()->getOne($sQ);
                 if ($sCountryName) {
                     $sCountry = $sCountryName;
                 }
@@ -594,7 +596,7 @@ class AdminView extends \oxView
     }
 
     /**
-     * Marks seo entires as expired, cleans up tag clouds cache
+     * Marks seo entires as expired.
      *
      * @param string $sShopId Shop id
      */
@@ -605,12 +607,6 @@ class AdminView extends \oxView
         foreach ($aTypes as $sType) {
             $oEncoder->markAsExpired(null, $sShopId, 1, null, "oxtype = '{$sType}'");
         }
-
-        // @deprecated v5.3 (2016-05-04); Tags will be moved to own module.
-        // resetting tag cache
-        $oTagCloud = oxNew('oxtagcloud');
-        $oTagCloud->resetCache();
-        // END deprecated
     }
 
     /**

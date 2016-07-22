@@ -138,7 +138,8 @@ class CategoryOrderAjax extends \ajaxListComponent
             $sSelect .= "not in ( " . implode(", ", oxDb::getDb()->quoteArray($aSkipArt)) . " ) ";
 
             // simply echoing "1" if some items found, and 0 if nothing was found
-            echo (int) oxDb::getDb()->getOne($sSelect, false, false);
+            // We force reading from master to prevent issues with slow replications or open transactions (see ESDEV-3804).
+            echo (int) oxDb::getMaster()->getOne($sSelect);
         }
     }
 
@@ -175,7 +176,8 @@ class CategoryOrderAjax extends \ajaxListComponent
             $sSelect .= "not in ( " . implode(", ", oxDb::getDb()->quoteArray($aOrdArt)) . " ) ";
 
             // simply echoing "1" if some items found, and 0 if nothing was found
-            echo (int) oxDb::getDb()->getOne($sSelect, false, false);
+            // We force reading from master to prevent issues with slow replications or open transactions (see ESDEV-3804).
+            echo (int) oxDb::getMaster()->getOne($sSelect);
         }
     }
 

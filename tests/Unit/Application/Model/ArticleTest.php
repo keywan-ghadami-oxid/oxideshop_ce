@@ -107,8 +107,6 @@ class ArticleTest extends \OxidTestCase
         $oDB->Execute('delete from oxselectlist where oxid = "_testoxsellist" ');
         $oDB->Execute('delete from oxobject2selectlist where oxselnid = "_testoxsellist" ');
 
-        $this->setProtectedClassProperty(Database::getInstance(), 'tblDescCache', []);
-
         parent::tearDown();
     }
 
@@ -1642,7 +1640,7 @@ class ArticleTest extends \OxidTestCase
 
         $this->assertEquals(4, $oArticle->oxarticles__oxrating->value);
         $this->assertEquals(3, $oArticle->oxarticles__oxratingcnt->value);
-        $dRating = oxDb::getDB()->getOne("select oxrating from oxarticles where oxid='" . $oArticle->getId() . "'");
+        $dRating = oxDb::getDb()->getOne("select oxrating from oxarticles where oxid='" . $oArticle->getId() . "'");
         $this->assertEquals(4, $dRating);
     }
 
@@ -3520,6 +3518,8 @@ class ArticleTest extends \OxidTestCase
      */
     public function testDeleteWithId()
     {
+        $this->_createArticle('_testArt');
+
         $oArticle = oxNew('oxArticle');
         $this->assertTrue($oArticle->delete('_testArt'));
     }
@@ -3828,7 +3828,7 @@ class ArticleTest extends \OxidTestCase
 
         $rs = $oArticle->updateSoldAmount(1);
 
-        $this->assertTrue($rs->EOF);
+        $this->assertTrue($rs);
         $this->assertEquals(1, $oDb->getOne("select oxsoldamount from oxarticles where oxid = '_testArt'"));
         $this->assertNotEquals($sTimeStamp, $oDb->getOne("select oxtimestamp from oxarticles where oxid = '_testArt'"));
     }
@@ -3855,7 +3855,7 @@ class ArticleTest extends \OxidTestCase
     {
         $oArticle = $this->_createArticle('_testArt');
         $rs = $oArticle->disableReminder(1);
-        $this->assertTrue($rs->EOF);
+        $this->assertTrue($rs);
         $this->assertEquals(2, oxDb::getDB()->getOne("select oxremindactive from oxarticles where oxid = '_testArt'"));
     }
 
@@ -6419,15 +6419,12 @@ class ArticleTest extends \OxidTestCase
      */
     public function testInPriceCategoryNoException($return, $expected)
     {
-        $oA = oxNew('oxArticle');
+        $articleMock = $this->getMock('oxArticle', array('fetchFirstInPriceCategory'));
+        $articleMock->expects($this->any())
+            ->method('fetchFirstInPriceCategory')
+            ->willReturn($return);
 
-        $dbMock = $this->getDbObjectMock();
-        $dbMock->expects($this->any())
-            ->method('getOne')
-            ->will($this->returnValue($return));
-        $this->setProtectedClassProperty(Database::getInstance(), 'db' , $dbMock); 
-
-        $this->assertEquals($expected, $oA->inPriceCategory('sCatNid'));
+        $this->assertEquals($expected, $articleMock->inPriceCategory('sCatNid'));
     }
 
     /**
@@ -6437,31 +6434,26 @@ class ArticleTest extends \OxidTestCase
      */
     public function testInPriceCategoryException()
     {
-        $oA = oxNew('oxArticle');
-        $oA->setId('_testx');
-        $oA->oxarticles__oxprice = new oxField(95);
-
-        $dbMock = $this->getDbObjectMock();
-        $dbMock->expects($this->any())
-            ->method('getOne')
-            ->will($this->returnCallback(function ($s) {
-                    throw new Exception($s);
-            }));
-
-        $this->setProtectedClassProperty(Database::getInstance(), 'db' , $dbMock); 
-
-        try {
-            $oA->inPriceCategory('sCatNid');
-        } catch (Exception $e) {
-            if ($this->getConfig()->getEdition() === 'EE') {
-                $this->assertEquals("select 1 from oxv_oxcategories_1_de where oxid='sCatNid' and(   (oxpricefrom != 0 and oxpriceto != 0 and oxpricefrom <= '95' and oxpriceto >= '95') or (oxpricefrom != 0 and oxpriceto = 0 and oxpricefrom <= '95') or (oxpricefrom = 0 and oxpriceto != 0 and oxpriceto >= '95'))", $e->getMessage());
-            } else {
-                $this->assertEquals("select 1 from oxv_oxcategories_de where oxid='sCatNid' and(   (oxpricefrom != 0 and oxpriceto != 0 and oxpricefrom <= '95' and oxpriceto >= '95') or (oxpricefrom != 0 and oxpriceto = 0 and oxpricefrom <= '95') or (oxpricefrom = 0 and oxpriceto != 0 and oxpriceto >= '95'))", $e->getMessage());
-            }
-
-            return;
+        if ($this->getConfig()->getEdition() === 'EE') {
+            $expected = "select 1 from oxv_oxcategories_1_de where oxid='sCatNid' and(   (oxpricefrom != 0 and oxpriceto != 0 and oxpricefrom <= '95' and oxpriceto >= '95') or (oxpricefrom != 0 and oxpriceto = 0 and oxpricefrom <= '95') or (oxpricefrom = 0 and oxpriceto != 0 and oxpriceto >= '95'))";
+        } else {
+            $expected = "select 1 from oxv_oxcategories_de where oxid='sCatNid' and(   (oxpricefrom != 0 and oxpriceto != 0 and oxpricefrom <= '95' and oxpriceto >= '95') or (oxpricefrom != 0 and oxpriceto = 0 and oxpricefrom <= '95') or (oxpricefrom = 0 and oxpriceto != 0 and oxpriceto >= '95'))";
         }
-        $this->fail('exception from oxdb not thrown');
+
+        $dbMock = $this->getMock('OxidEsales\Eshop\Core\Database\Adapter\Doctrine\Database', array('getOne', 'quote'));
+        $dbMock->expects($this->once())->method('getOne')->with($this->equalTo($expected));
+
+        $dbMock->expects($this->any())->method('quote')->will($this->returnValueMap(array(
+            array('sCatNid', "'sCatNid'"),
+            array('95', "'95'"),
+        )));
+
+        $articleMock = $this->getMock('oxArticle', array('getDatabase'));
+        $articleMock->expects($this->any())->method('getDatabase')->willReturn($dbMock);
+        $articleMock->setId('_testx');
+        $articleMock->oxarticles__oxprice = new oxField('95');
+
+        $articleMock->inPriceCategory('sCatNid');
     }
 
     /**
@@ -6842,9 +6834,6 @@ class ArticleTest extends \OxidTestCase
 
         $aQ[] = "CREATE TABLE oxartextends_set1 (OXID char(32) COLLATE latin1_general_ci NOT NULL, PRIMARY KEY (`OXID`)) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci";
         $aQ[] = "ALTER TABLE oxartextends_set1 ADD OXLONGDESC_5 text COLLATE latin1_general_ci NOT NULL";
-        // @deprecated v5.3 (2016-05-04); Will be moved to own module.
-        $aQ[] = "ALTER TABLE oxartextends_set1 ADD OXTAGS_5 varchar(255) COLLATE latin1_general_ci NOT NULL";
-        // END deprecated
         
         $aQ[] = "CREATE OR REPLACE SQL SECURITY INVOKER VIEW oxv_oxarticles_1_1 AS SELECT oxarticles.* FROM oxarticles";
         $aQ[] = "CREATE OR REPLACE SQL SECURITY INVOKER VIEW oxv_oxarticles_1_0 AS SELECT oxarticles.* FROM oxarticles";

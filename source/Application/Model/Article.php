@@ -35,8 +35,9 @@ define('OXARTICLE_LINKTYPE_CATEGORY', 0);
 define('OXARTICLE_LINKTYPE_VENDOR', 1);
 define('OXARTICLE_LINKTYPE_MANUFACTURER', 2);
 define('OXARTICLE_LINKTYPE_PRICECATEGORY', 3);
-define('OXARTICLE_LINKTYPE_TAG', 4); // @deprecated v5.3 (2016-05-04); Will be moved to own module.
+// @deprecated since v5.3 (2016-06-17); Listmania will be moved to an own module.
 define('OXARTICLE_LINKTYPE_RECOMM', 5);
+// END deprecated
 
 /**
  * Article manager.
@@ -798,7 +799,7 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
     public function isPriceAlarm()
     {
         // #419 disabling price alarm if article has fixed price
-        return !(isset($this->oxarticles__oxblfixedprice->value) && $this->oxarticles__oxblfixedprice->value);
+        return !(($this->__isset('oxarticles__oxblfixedprice') || $this->__get('oxarticles__oxblfixedprice')) && $this->__get('oxarticles__oxblfixedprice')->value);
     }
 
     /**
@@ -862,12 +863,8 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
      */
     public function isMultilingualField($sFieldName)
     {
-        switch ($sFieldName) {
-            case "oxlongdesc":
-            // @deprecated v5.3 (2016-05-04); Tags will be moved to own module.
-            case "oxtags":
-            // END deprecated
-                return true;
+        if ('oxlongdesc' == $sFieldName) {
+            return true;
         }
 
         return parent::isMultilingualField($sFieldName);
@@ -2151,7 +2148,7 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
 
     /**
      * Deletes record and other information related to this article such as images from DB,
-     * also removes variants. Returns true on success.
+     * also removes variants. Returns true if entry was deleted.
      *
      * @param string $sOXID Article id
      *
@@ -2173,15 +2170,15 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
         $this->_onChangeResetCounts($sOXID, $this->oxarticles__oxvendorid->value, $this->oxarticles__oxmanufacturerid->value);
 
         // delete self
-        parent::delete($sOXID);
+        $deleted = parent::delete($sOXID);
 
-        $rs = $this->_deleteRecords($sOXID);
+        $this->_deleteRecords($sOXID);
 
         oxRegistry::get("oxSeoEncoderArticle")->onDeleteArticle($this);
 
         $this->onChange(ACTION_DELETE, $sOXID, $this->oxarticles__oxparentid->value);
 
-        return $rs->EOF;
+        return $deleted;
     }
 
     /**
@@ -2212,7 +2209,7 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
 
     /**
      * Recursive function. Updates quantity of sold articles.
-     * Return true on success
+     * Return true if amount was changed in database.
      *
      * @param float $dAmount Number of articles sold
      *
@@ -2238,7 +2235,7 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
             }
         }
 
-        return $rs;
+        return (bool) $rs;
     }
 
     /**
@@ -2250,7 +2247,7 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
     {
         $oDb = oxDb::getDb();
 
-        return $oDb->execute("update oxarticles set oxarticles.oxremindactive = 2 where oxarticles.oxid = " . $oDb->quote($this->oxarticles__oxid->value));
+        return (bool) $oDb->execute("update oxarticles set oxarticles.oxremindactive = 2 where oxarticles.oxid = " . $oDb->quote($this->oxarticles__oxid->value));
     }
 
     /**
@@ -2261,11 +2258,9 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
     public function save()
     {
         $this->_assignParentDependFields();
-
-        if (($blRet = parent::save())) {
-            // saving long description
-            $this->_saveArtLongDesc();
-        }
+        $blRet = parent::save();
+        // saving long description
+        $this->_saveArtLongDesc();
 
         return $blRet;
     }
@@ -3229,24 +3224,64 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
     /**
      * Checks if article is assigned to price category $sCatNID.
      *
-     * @param string $sCatNid Price category ID
+     * @param string $categoryPriceId Price category ID
      *
      * @return bool
      */
-    public function inPriceCategory($sCatNid)
+    public function inPriceCategory($categoryPriceId)
     {
-        $oDb = oxDb::getDb();
+        return (bool) $this->fetchFirstInPriceCategory($categoryPriceId);
+    }
 
-        $sQuotedPrice = $oDb->quote($this->oxarticles__oxprice->value);
-        $sQuotedCnid = $oDb->quote($sCatNid);
+    /**
+     * Fetch the article corresponding to this object in the price category with the given id.  
+     * 
+     * @param string $categoryPriceId The id of the category we want to check, if this article is in.
+     *
+     * @return string One, if the given article is in the given price category, else empty string. 
+     */
+    protected function fetchFirstInPriceCategory($categoryPriceId)
+    {
+        $database = $this->getDatabase();
 
-        return (bool) $oDb->getOne(
-            "select 1 from " . $this->_getObjectViewName('oxcategories') . " where oxid=$sQuotedCnid and"
-            . "(   (oxpricefrom != 0 and oxpriceto != 0 and oxpricefrom <= $sQuotedPrice and oxpriceto >= $sQuotedPrice)"
-            . " or (oxpricefrom != 0 and oxpriceto = 0 and oxpricefrom <= $sQuotedPrice)"
-            . " or (oxpricefrom = 0 and oxpriceto != 0 and oxpriceto >= $sQuotedPrice)"
-            . ")"
-        );
+        $query = $this->createFetchFirstInPriceCategorySql($categoryPriceId);
+
+        $result = $database->getOne($query);
+
+        return $result;
+    }
+
+    /**
+     * Create the sql for the fetchFirstInPriceCategory method.
+     *
+     * @param string $categoryPriceId The price category id.
+     *
+     * @return string The wished sql.
+     */
+    protected function createFetchFirstInPriceCategorySql($categoryPriceId)
+    {
+        $database = $this->getDatabase();
+
+        $quotedPrice = $database->quote($this->oxarticles__oxprice->value);
+        $quotedCategoryId = $database->quote($categoryPriceId);
+
+        $query = "select 1 from " . $this->_getObjectViewName('oxcategories') . " where oxid=$quotedCategoryId and"
+                 . "(   (oxpricefrom != 0 and oxpriceto != 0 and oxpricefrom <= $quotedPrice and oxpriceto >= $quotedPrice)"
+                 . " or (oxpricefrom != 0 and oxpriceto = 0 and oxpricefrom <= $quotedPrice)"
+                 . " or (oxpricefrom = 0 and oxpriceto != 0 and oxpriceto >= $quotedPrice)"
+                 . ")";
+
+        return $query;
+    }
+
+    /**
+     * Get the database object.
+     *
+     * @return \OxidEsales\Eshop\Core\Database\Adapter\DatabaseInterface
+     */
+    protected function getDatabase()
+    {
+        return oxDb::getDb();
     }
 
     /**
@@ -4520,9 +4555,7 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
         $oDb->execute($sDelete);
 
         $sDelete = 'delete from oxobject2list where oxobjectid = ' . $articleId . ' ';
-        $rs = $oDb->execute($sDelete);
-
-        return $rs;
+        $oDb->execute($sDelete);
     }
 
     /**
@@ -4533,10 +4566,11 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
     protected function _deleteVariantRecords($sOXID)
     {
         if ($sOXID) {
-            $oDb = oxDb::getDb();
+            // We force reading from master to prevent issues with slow replications or open transactions (see ESDEV-3804).
+            $masterDb = oxDb::getMaster();
             //collect variants to remove recursively
-            $sQ = 'select oxid from ' . $this->getViewName() . ' where oxparentid = ' . $oDb->quote($sOXID);
-            $rs = $oDb->select($sQ, false, false);
+            $sQ = 'select oxid from ' . $this->getViewName() . ' where oxparentid = ' . $masterDb->quote($sOXID);
+            $rs = $masterDb->select($sQ, false);
             $oArticle = oxNew("oxArticle");
             if ($rs != false && $rs->count() > 0) {
                 while (!$rs->EOF) {
@@ -4606,19 +4640,20 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
     protected function _onChangeUpdateStock($sParentID)
     {
         if ($sParentID) {
-            $oDb = oxDb::getDb();
-            $sParentIdQuoted = $oDb->quote($sParentID);
+            // We force reading from master to prevent issues with slow replications or open transactions (see ESDEV-3804).
+            $masterDb = oxDb::getMaster();
+            $sParentIdQuoted = $masterDb->quote($sParentID);
             $sQ = 'select oxstock, oxvendorid, oxmanufacturerid from oxarticles where oxid = ' . $sParentIdQuoted;
-            $rs = $oDb->select($sQ, false, false);
+            $rs = $masterDb->select($sQ, false);
             $iOldStock = $rs->fields[0];
             $iVendorID = $rs->fields[1];
             $iManufacturerID = $rs->fields[2];
 
             $sQ = 'select sum(oxstock) from ' . $this->getViewName(true) . ' where oxparentid = ' . $sParentIdQuoted . ' and ' . $this->getSqlActiveSnippet(true) . ' and oxstock > 0 ';
-            $iStock = (float) $oDb->getOne($sQ, false, false);
+            $iStock = (float) $masterDb->getOne($sQ, false, false);
 
             $sQ = 'update oxarticles set oxvarstock = ' . $iStock . ' where oxid = ' . $sParentIdQuoted;
-            $oDb->execute($sQ);
+            $masterDb->execute($sQ);
 
             //now lets update category counts
             //first detect stock status change for this article (to or from 0)
@@ -4662,13 +4697,15 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
     protected function _onChangeUpdateVarCount($sParentID)
     {
         if ($sParentID) {
-            $oDb = oxDb::getDb();
-            $sParentIdQuoted = $oDb->quote($sParentID);
+            // We force reading from master to prevent issues with slow replications or open transactions (see ESDEV-3804).
+            $masterDb = oxDb::getMaster();
+
+            $sParentIdQuoted = $masterDb->quote($sParentID);
             $sQ = "select count(*) as varcount from oxarticles where oxparentid = {$sParentIdQuoted}";
-            $iVarCount = (int) $oDb->getOne($sQ, false, false);
+            $iVarCount = (int) $masterDb->getOne($sQ, false, false);
 
             $sQ = "update oxarticles set oxvarcount = {$iVarCount} where oxid = {$sParentIdQuoted}";
-            $oDb->execute($sQ);
+            $masterDb->execute($sQ);
         }
     }
 
@@ -4680,25 +4717,25 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
     protected function _setVarMinMaxPrice($sParentId)
     {
         if ($sParentId) {
-            $oDb = oxDb::getDb(oxDb::FETCH_MODE_ASSOC);
-            $sQ = '
+          // We force reading from master to prevent issues with slow replications or open transactions (see ESDEV-3804).
+          $masterDb = oxDb::getMaster(oxDb::FETCH_MODE_ASSOC);
+          $sQ = '
                 SELECT
                     MIN( IF( `oxarticles`.`oxprice` > 0, `oxarticles`.`oxprice`, `p`.`oxprice` ) ) AS `varminprice`,
                     MAX( IF( `oxarticles`.`oxprice` > 0, `oxarticles`.`oxprice`, `p`.`oxprice` ) ) AS `varmaxprice`
                 FROM ' . $this->getViewName(true) . ' AS `oxarticles`
                     LEFT JOIN ' . $this->getViewName(true) . ' AS `p` ON ( `p`.`oxid` = `oxarticles`.`oxparentid` AND `p`.`oxprice` > 0 )
                 WHERE ' . $this->getSqlActiveSnippet(true) . '
-                    AND ( `oxarticles`.`oxparentid` = ' . $oDb->quote($sParentId) . ' )';
-            $oDb->setFetchMode(oxDb::FETCH_MODE_ASSOC);
-            $aPrices = $oDb->getRow($sQ, false, false);
+                    AND ( `oxarticles`.`oxparentid` = ' . $masterDb->quote($sParentId) . ' )';
+            $aPrices = $masterDb->getRow($sQ);
             if (!is_null($aPrices['varminprice']) || !is_null($aPrices['varmaxprice'])) {
                 $sQ = '
                     UPDATE `oxarticles`
                     SET
-                        `oxvarminprice` = ' . $oDb->quote($aPrices['varminprice']) . ',
-                        `oxvarmaxprice` = ' . $oDb->quote($aPrices['varmaxprice']) . '
+                        `oxvarminprice` = ' . $masterDb->quote($aPrices['varminprice']) . ',
+                        `oxvarmaxprice` = ' . $masterDb->quote($aPrices['varmaxprice']) . '
                     WHERE
-                        `oxid` = ' . $oDb->quote($sParentId);
+                        `oxid` = ' . $masterDb->quote($sParentId);
             } else {
                 $sQ = '
                     UPDATE `oxarticles`
@@ -4706,11 +4743,12 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
                         `oxvarminprice` = `oxprice`,
                         `oxvarmaxprice` = `oxprice`
                     WHERE
-                        `oxid` = ' . $oDb->quote($sParentId);
+                        `oxid` = ' . $masterDb->quote($sParentId);
             }
-            $oDb->execute($sQ);
+            $masterDb->execute($sQ);
         }
     }
+
 
     /**
      * Checks if article has uploaded master image for selected picture
@@ -4741,6 +4779,7 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
 
         return false;
     }
+
 
     /**
      * Checks and return true if price view mode is netto
@@ -4783,7 +4822,6 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
 
         return $oPrice;
     }
-
 
     /**
      * Depending on view mode prepare price for viewing
@@ -4831,6 +4869,7 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
         return $dPrice;
     }
 
+
     /**
      * Return price suffix
      *
@@ -4854,7 +4893,6 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
         return $sPriceSuffix;
     }
 
-
     /**
      * Return prepared price
      *
@@ -4875,7 +4913,6 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
 
         return $dPrice;
     }
-
 
     /**
      * Return variant min price
@@ -4987,6 +5024,7 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
         return $aData;
     }
 
+
     /**
      * Place to hook and change amount if it should be calculated by different logic,
      * for example VPE.
@@ -5019,7 +5057,6 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
 
         return $oDb->execute($sSql);
     }
-
 
     /**
      * Returns array of fields which should not changed in variants
@@ -5094,4 +5131,5 @@ class Article extends \oxI18n implements ArticleInterface, \oxIUrl
     {
         $oManufacturer->setReadOnly(true);
     }
+
 }

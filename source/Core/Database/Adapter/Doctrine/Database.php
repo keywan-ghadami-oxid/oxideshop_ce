@@ -19,7 +19,8 @@
  * @copyright (C) OXID eSales AG 2003-2016
  * @version       OXID eShop CE
  */
-namespace OxidEsales\Eshop\Core\Database;
+
+namespace OxidEsales\Eshop\Core\Database\Adapter\Doctrine;
 
 use Doctrine\DBAL\Configuration;
 use Doctrine\DBAL\Connection;
@@ -28,8 +29,7 @@ use Doctrine\DBAL\Driver\PDOException;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Exception;
 use OxidEsales\Eshop;
-use OxidEsales\Eshop\Core\Database\Adapter\DoctrineEmptyResultSet;
-use OxidEsales\Eshop\Core\Database\Adapter\DoctrineResultSet;
+use OxidEsales\Eshop\Core\Database\Adapter\DatabaseInterface;
 use OxidEsales\Eshop\Core\Exception\DatabaseConnectionException;
 use OxidEsales\Eshop\Core\Exception\DatabaseException;
 use OxidEsales\Eshop\Core\Exception\StandardException;
@@ -37,9 +37,9 @@ use OxidEsales\Eshop\Core\Exception\StandardException;
 /**
  * The doctrine implementation of our database.
  *
- * @package OxidEsales\Eshop\Core\Database
+ * @package OxidEsales\Eshop\Core\Database\Adapter\Doctrine;
  */
-class Doctrine implements DatabaseInterface
+class Database implements DatabaseInterface
 {
 
     /**
@@ -50,11 +50,6 @@ class Doctrine implements DatabaseInterface
      * @var \Doctrine\DBAL\Connection The database connection.
      */
     protected $connection = null;
-
-    /**
-     * @var int The number of rows affected by the last sql query.
-     */
-    protected $affectedRows = 0;
 
     /**
      * @var int The current fetch mode.
@@ -100,10 +95,6 @@ class Doctrine implements DatabaseInterface
         if (array_key_exists('default', $connectionParameters)) {
             $this->connectionParameters = $this->getPdoMysqlConnectionParameters($connectionParameters['default']);
         }
-
-        if (array_key_exists('slaves', $connectionParameters)) {
-            $this->setConnectionParametersForMasterSlave($connectionParameters['slaves']);
-        }
     }
 
     /**
@@ -127,14 +118,14 @@ class Doctrine implements DatabaseInterface
         try {
             $connection = DriverManager::getConnection($connectionParameters, $configuration);
             $connection->connect();
-            if (! $connection->isConnected()) {
-                $dsn = $connection->getDriver()->getName() .
-                       '://' .
-                       '****:****@' .
-                       $connection->getHost() . ':' .  $connection->getPort() .
-                       '/' . $connection->getDatabase();
-                throw new DBALException('Not connected to database. dsn: ' . $dsn);
-            }
+//            if (! $connection->isConnected()) {
+//                $dsn = $connection->getDriver()->getName() .
+//                       '://' .
+//                       '****:****@' .
+//                       $connection->getHost() . ':' .  $connection->getPort() .
+//                       '/' . $connection->getDatabase();
+//                throw new DBALException('Not connected to database. dsn: ' . $dsn);
+//            }
             $this->setConnection($connection);
         } catch (DBALException $exception) {
             $exception = $this->convertException($exception);
@@ -146,13 +137,26 @@ class Doctrine implements DatabaseInterface
     }
 
     /**
+     * Getter for master connection object.
+     *
+     * @return Connection
+     */
+    public function forceMasterConnection()
+    {
+        if (is_null($this->connection)) {
+            $this->connect();
+        }
+        $this->connection->connect('master');
+    }
+
+    /**
      * Closes an open connection
      */
     public function closeConnection()
     {
         $this->connection->close();
     }
-    
+
     /**
      * Set connection
      *
@@ -161,18 +165,6 @@ class Doctrine implements DatabaseInterface
     protected function setConnection($connection)
     {
         $this->connection = $connection;
-    }
-
-    /**
-     * @todo to be implemented
-     *
-     * @param array $connectionParameters
-     */
-    protected function setConnectionParametersForMasterSlave(array $connectionParameters)
-    {
-        $wrapperClass = array('wrapperClass' => 'Doctrine\DBAL\Connections\MasterSlaveConnection');
-
-        $this->connectionParameters = array_merge($connectionParameters, $wrapperClass);
     }
 
     /**
@@ -266,11 +258,10 @@ class Doctrine implements DatabaseInterface
      *
      * @param string $sqlSelect      The sql select statement
      * @param array  $parameters     Array of parameters, for the given sql statement.
-     * @param bool   $executeOnSlave Should the given sql statement executed on the slave?
      *
      * @return string The first column of the first row, which is fitting to the given sql select statement.
      */
-    public function getOne($sqlSelect, $parameters = array(), $executeOnSlave = true)
+    public function getOne($sqlSelect, $parameters = array())
     {
         // @deprecated since v6.0 (2016-04-13); Backward compatibility for v5.3.0.
         $parameters = $this->assureParameterIsAnArray($parameters);
@@ -292,18 +283,17 @@ class Doctrine implements DatabaseInterface
      *
      * @param string $sqlSelect      The sql select statement we want to execute.
      * @param array  $parameters     Array of parameters, for the given sql statement.
-     * @param bool   $executeOnSlave Execute this statement on the slave database. Only evaluated in a master - slave setup.
      *
      * @return array The row, we selected with the given sql statement.
      */
-    public function getRow($sqlSelect, $parameters = array(), $executeOnSlave = true)
+    public function getRow($sqlSelect, $parameters = array())
     {
         // @deprecated since v6.0 (2016-04-13); Backward compatibility for v5.3.0.
         $parameters = $this->assureParameterIsAnArray($parameters);
         // END deprecated
 
         try {
-            $resultSet = $this->select($sqlSelect, $parameters, $executeOnSlave);
+            $resultSet = $this->select($sqlSelect, $parameters);
             $result = $resultSet->fields;
         } catch (DatabaseException $exception) {
             /** Only log exception, do not re-throw here, as legacy code expects this behavior */
@@ -324,25 +314,21 @@ class Doctrine implements DatabaseInterface
     }
 
     /**
-     * Get the number of rows, which where changed during the last sql statement.
-     *
-     * @return int The number of rows affected by the sql statement.
-     */
-    public function affectedRows()
-    {
-        return $this->getAffectedRows();
-    }
-
-    /**
      * Quote a string in a way that it can be used as a identifier (i.e. table name or field name) in a SQL statement.
      *
-     * @param string $string The string to be quoted as a identifier. 
+     * @param string $string The string to be quoted as a identifier.
      *
      * @return string The quoted string
      */
     public function quoteIdentifier($string)
     {
-        return $this->getConnection()->quoteIdentifier(trim($string, $this->getConnection()->getDatabasePlatform()->getIdentifierQuoteCharacter()));
+        $identifierQuoteCharacter = $this->getConnection()->getDatabasePlatform()->getIdentifierQuoteCharacter();
+        if (!$identifierQuoteCharacter) {
+            $identifierQuoteCharacter = '`';
+        }
+        $string = trim(str_replace($identifierQuoteCharacter, '', $string));
+
+        return $this->getConnection()->quoteIdentifier($string);
     }
 
     /**
@@ -433,7 +419,7 @@ class Doctrine implements DatabaseInterface
      *
      * @throws \InvalidArgumentException|DatabaseException
      *
-     * @return bool|DoctrineEmptyResultSet|DoctrineResultSet
+     * @return bool|integer
      */
     public function setTransactionIsolationLevel($level)
     {
@@ -458,24 +444,23 @@ class Doctrine implements DatabaseInterface
     }
 
     /**
-     * Execute the given query and return the corresponding result set.
+     * Execute the given query and return the number of affected rows.
      *
      * @param string $query      The query we want to execute.
      * @param array  $parameters The parameters for the given query.
      *
      * @throws DatabaseException
      *
-     * @return DoctrineEmptyResultSet|DoctrineResultSet
+     * @return integer The number of affected rows.
      */
     public function execute($query, $parameters = array())
     {
         // @deprecated since v6.0 (2016-04-13); Backward compatibility for v5.3.0.
         $parameters = $this->assureParameterIsAnArray($parameters);
+
         // END deprecated
 
-        $result = $this->executeUpdate($query, $parameters);
-
-        return $result;
+        return $this->executeUpdate($query, $parameters);
     }
 
     /**
@@ -484,13 +469,12 @@ class Doctrine implements DatabaseInterface
      *
      * @param string $sqlSelect      The sql select statement we want to execute.
      * @param array  $parameters     The parameters for the given query.
-     * @param bool   $executeOnSlave Execute this statement on the slave database. Only evaluated in a master - slave setup.
      *
      * @throws DatabaseException The exception, that can occur while running the sql statement.
      *
-     * @return DoctrineResultSet The result of the given query.
+     * @return ResultSet The result of the given query.
      */
-    public function select($sqlSelect, $parameters = array(), $executeOnSlave = true)
+    public function select($sqlSelect, $parameters = array())
     {
         // @deprecated since v6.0 (2016-04-13); Backward compatibility for v5.3.0.
         $parameters = $this->assureParameterIsAnArray($parameters);
@@ -505,9 +489,7 @@ class Doctrine implements DatabaseInterface
              */
             /** @var \Doctrine\DBAL\Driver\Statement $statement Statement is prepared and executed by executeQuery() */
             $statement = $this->getConnection()->executeQuery($sqlSelect, $parameters);
-            $result = new DoctrineResultSet($statement);
-
-            $this->setAffectedRows($result->count());
+            $result = new ResultSet($statement);
         } catch (DBALException $exception) {
             $exception = $this->convertException($exception);
             $this->handleException($exception);
@@ -520,6 +502,33 @@ class Doctrine implements DatabaseInterface
     }
 
     /**
+     * This method is a helper in a master-slave context to be able to execute SET statements without the need to use
+     * more appropriate use of self::execute(), which would force the connection to pick the master.
+     *
+     * @param string $query The sql statement we want to execute.
+     *
+     * @throws \InvalidArgumentException If the statement is not a SET statement
+     * @throws DatabaseException         The exception, that can occur while running the sql statement.
+     */
+    public function executeSet($query)
+    {
+        if (strtoupper($this->getFristCommandInStatement($query)) !== 'SET') {
+            throw new \InvalidArgumentException();
+        }
+
+        try {
+            /** @var \Doctrine\DBAL\Driver\Statement $statement Statement is prepared and executed by executeQuery() */
+            $this->getConnection()->executeQuery($query);
+        } catch (DBALException $exception) {
+            $exception = $this->convertException($exception);
+            $this->handleException($exception);
+        } catch (PDOException $exception) {
+            $exception = $this->convertException($exception);
+            $this->handleException($exception);
+        }
+    }
+
+    /**
      * Run a given select sql statement with a limit clause.
      * Be aware that only a few database vendors have the LIMIT clause as known from MySQL.
      * The Doctrine Query Builder should be used here.
@@ -528,13 +537,12 @@ class Doctrine implements DatabaseInterface
      * @param int        $rowCount       Maximum number of rows to return
      * @param int        $offset         Offset of the first row to return
      * @param array|bool $parameters     The parameters array.
-     * @param bool       $executeOnSlave Execute this statement on the slave database. Only evaluated in a master - slave setup.
      *
      * @throws DatabaseException
      *
-     * @return DoctrineResultSet The result of the given query.
+     * @return ResultSet The result of the given query.
      */
-    public function selectLimit($sqlSelect, $rowCount = -1, $offset = -1, $parameters = false, $executeOnSlave = true)
+    public function selectLimit($sqlSelect, $rowCount = -1, $offset = -1, $parameters = false)
     {
         /**
          * Parameter validation.
@@ -560,7 +568,7 @@ class Doctrine implements DatabaseInterface
             $limitClause = "LIMIT $rowCount OFFSET $offset";
         }
 
-        return $this->select($sqlSelect . " $limitClause ", $parameters, $executeOnSlave);
+        return $this->select($sqlSelect . " $limitClause ", $parameters);
     }
 
     /**
@@ -568,17 +576,16 @@ class Doctrine implements DatabaseInterface
      *
      * @param string $sqlSelect      The sql select statement we want to execute.
      * @param array  $parameters     The parameters array.
-     * @param bool   $executeOnSlave Execute this statement on the slave database. Only evaluated in a master - slave setup.
      *
      * @return array The values of a column of a corresponding sql query.
      */
-    public function getCol($sqlSelect, $parameters = array(), $executeOnSlave = true)
+    public function getCol($sqlSelect, $parameters = array())
     {
         // @deprecated since v6.0 (2016-04-13); Backward compatibility for v5.3.0.
         $parameters = $this->assureParameterIsAnArray($parameters);
         // END deprecated
 
-        try{
+        try {
             $rows = $this->getConnection()->fetchAll($sqlSelect, $parameters);
             $result = array();
             foreach ($rows as $row) {
@@ -600,8 +607,7 @@ class Doctrine implements DatabaseInterface
     }
 
     /**
-     * Executes an SQL INSERT/UPDATE/DELETE query with the given parameters, sets the number of affected rows and returns
-     * an empty DoctrineResultSet.
+     * Executes an SQL INSERT/UPDATE/DELETE query with the given parameters and returns the number of affected.
      *
      * This method supports PDO binding types as well as DBAL mapping types.
      *
@@ -611,7 +617,7 @@ class Doctrine implements DatabaseInterface
      *
      * @throws DatabaseException
      *
-     * @return DoctrineEmptyResultSet
+     * @return integer The number of affected rows.
      */
     public function executeUpdate($query, $parameters = array(), $types = array())
     {
@@ -621,15 +627,12 @@ class Doctrine implements DatabaseInterface
 
         try {
             $affectedRows = $this->getConnection()->executeUpdate($query, $parameters, $types);
-            $this->setAffectedRows($affectedRows);
         } catch (DBALException $exception) {
             $exception = $this->convertException($exception);
             $this->handleException($exception);
         }
 
-        $result = new DoctrineEmptyResultSet();
-
-        return $result;
+        return $affectedRows;
     }
 
     /**
@@ -640,26 +643,6 @@ class Doctrine implements DatabaseInterface
     protected function getConnection()
     {
         return $this->connection;
-    }
-
-    /**
-     * Set the number of the rows, changed by the last query.
-     *
-     * @param int $affectedRows How many rows did the last query changed?
-     */
-    protected function setAffectedRows($affectedRows)
-    {
-        $this->affectedRows = $affectedRows;
-    }
-
-    /**
-     * Get the number of the rows, changed by the last query.
-     *
-     * @return int How many rows did the last query changed?
-     */
-    protected function getAffectedRows()
-    {
-        return $this->affectedRows;
     }
 
     /**
@@ -732,14 +715,7 @@ class Doctrine implements DatabaseInterface
             'EXPLAIN',
             'HELP',
         ];
-        $sqlComments = '@(([\'"]).*?[^\\\]\2)|((?:\#|--).*?$|/\*(?:[^/*]|/(?!\*)|\*(?!/)|(?R))*\*\/)\s*|(?<=;)\s+@ms';
-        $uncommentedQuery = preg_replace($sqlComments, '$1', $query);
-
-        $command = strtoupper(
-            trim(
-                explode(' ', trim($uncommentedQuery))[0]
-            )
-        );
+        $command = $this->getFristCommandInStatement($query);
 
         return in_array($command, $allowedCommands);
     }
@@ -830,7 +806,6 @@ class Doctrine implements DatabaseInterface
      *
      * @param string $sqlSelect      The sql select statement we want to execute.
      * @param array  $parameters     must loosely evaluate to false or must be an array
-     * @param bool   $executeOnSlave Execute this statement on the slave database. Only evaluated in a master - slave setup.
      *
      * @see DatabaseInterface::setFetchMode()
      * @see Doctrine::$fetchMode
@@ -840,7 +815,7 @@ class Doctrine implements DatabaseInterface
      *
      * @return array
      */
-    public function getAll($sqlSelect, $parameters = array(), $executeOnSlave = true)
+    public function getAll($sqlSelect, $parameters = array())
     {
         $result = array();
         $statement = null;
@@ -930,7 +905,7 @@ class Doctrine implements DatabaseInterface
             $item->primary_key = (strtolower($key) == 'pri');
             $item->auto_increment = strtolower($extra) == 'auto_increment';
             $item->binary = (false !== strpos(strtolower($type), 'blob'));
-            $item->unsigned =  (false !== strpos(strtolower($type), 'unsigned'));
+            $item->unsigned = (false !== strpos(strtolower($type), 'unsigned'));
             $item->has_default = ('' === $default || is_null($default)) ? false : true;
             if ($item->has_default) {
                 $item->default_value = $default;
@@ -941,13 +916,13 @@ class Doctrine implements DatabaseInterface
              * We do it the same way here for compatibility.
              */
             list($max_length, $scale) = $this->getColumnMaxLengthAndScale($column, $item->type);
-            if(-1 !== $max_length){
-                $item->max_length = (string)$max_length;
+            if (-1 !== $max_length) {
+                $item->max_length = (string) $max_length;
             } else {
                 $item->max_length = $max_length;
             }
-            if(-1 !== $scale){
-                $item->scale = (string)$scale;
+            if (-1 !== $scale) {
+                $item->scale = (string) $scale;
             } else {
                 $item->scale = null;
             }
@@ -1001,27 +976,27 @@ class Doctrine implements DatabaseInterface
     {
         if (array_key_exists('Field', $column)) {
             $keyMap = array(
-                'Field' => 'Field',
-                'Type' => 'Type',
-                'Null' => 'Null',
-                'Key' => 'Key',
-                'Default' => 'Default',
-                'Extra' => 'Extra',
-                'Comment' => 'Comment',
+                'Field'        => 'Field',
+                'Type'         => 'Type',
+                'Null'         => 'Null',
+                'Key'          => 'Key',
+                'Default'      => 'Default',
+                'Extra'        => 'Extra',
+                'Comment'      => 'Comment',
                 'CharacterSet' => 'CharacterSet',
-                'Collation' => 'Collation',
+                'Collation'    => 'Collation',
             );
         } else {
             $keyMap = array(
-                'Field' => 0,
-                'Type' => 1,
-                'Null' => 2,
-                'Key' => 3,
-                'Default' => 4,
-                'Extra' => 5,
-                'Comment' => 6,
+                'Field'        => 0,
+                'Type'         => 1,
+                'Null'         => 2,
+                'Key'          => 3,
+                'Default'      => 4,
+                'Extra'        => 5,
+                'Comment'      => 6,
                 'CharacterSet' => 7,
-                'Collation' => 8,
+                'Collation'    => 8,
             );
         }
 
@@ -1060,14 +1035,14 @@ class Doctrine implements DatabaseInterface
                 $scale = $matches[3];
             }
             /** Match max length E.g CHAR(4) */
-        } elseif (preg_match("/^(.+)\((\d+)/", $mySqlType, $matches)){
+        } elseif (preg_match("/^(.+)\((\d+)/", $mySqlType, $matches)) {
             if (is_numeric($matches[2])) {
                 $maxLength = $matches[2];
             }
-        /**
-         * Match List type E.g. SET('A', 'B', 'CDE)
-         * In this case the length will be the string length of the longest element
-         */
+            /**
+             * Match List type E.g. SET('A', 'B', 'CDE)
+             * In this case the length will be the string length of the longest element
+             */
         } elseif (preg_match("/^(enum|set)\((.*)\)$/i", strtolower($mySqlType), $matches)) {
             if ($matches[2]) {
                 $pieces = explode(",", $matches[2]);
@@ -1106,5 +1081,24 @@ class Doctrine implements DatabaseInterface
         }
 
         return array((int) $maxLength, (int) $scale);
+    }
+
+    /**
+     * @param $query
+     *
+     * @return string
+     */
+    private function getFristCommandInStatement($query)
+    {
+        $sqlComments = '@(([\'"]).*?[^\\\]\2)|((?:\#|--).*?$|/\*(?:[^/*]|/(?!\*)|\*(?!/)|(?R))*\*\/)\s*|(?<=;)\s+@ms';
+        $uncommentedQuery = preg_replace($sqlComments, '$1', $query);
+
+        $command = strtoupper(
+            trim(
+                explode(' ', trim($uncommentedQuery))[0]
+            )
+        );
+
+        return $command;
     }
 }

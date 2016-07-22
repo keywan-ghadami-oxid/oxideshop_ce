@@ -19,9 +19,10 @@
  * @copyright (C) OXID eSales AG 2003-2016
  * @version       OXID eShop CE
  */
-namespace OxidEsales\Eshop\Core\Database;
 
-use OxidEsales\Eshop\Core\Database\Adapter\DoctrineResultSet;
+namespace OxidEsales\Eshop\Core\Database\Adapter;
+
+use OxidEsales\Eshop\Core\Database\Adapter\ResultSetInterface;
 use OxidEsales\Eshop\Core\Exception\DatabaseConnectionException;
 use OxidEsales\Eshop\Core\Exception\DatabaseException;
 
@@ -77,10 +78,15 @@ interface DatabaseInterface
     public function connect();
 
     /**
+     * Force database master connection.
+     */
+    public function forceMasterConnection();
+
+    /**
      * Closes an open connection
      */
     public function closeConnection();
-        
+
     /**
      * Set the fetch mode of an open database connection.
      *
@@ -102,11 +108,10 @@ interface DatabaseInterface
      *
      * @param string $query          The sql SELECT or SHOW statement.
      * @param array  $parameters     Array of parameters for the given sql statement.
-     * @param bool   $executeOnSlave Execute this statement on the slave database. Only evaluated in a master-slave setup.
      *
      * @return string|false          Returns a string for SELECT or SHOW statements and FALSE for any other statement.
      */
-    public function getOne($query, $parameters = array(), $executeOnSlave = true);
+    public function getOne($query, $parameters = array());
 
     /**
      * Get an array with the values of the first row of a given sql SELECT or SHOW statement .
@@ -117,7 +122,7 @@ interface DatabaseInterface
      *
      * NOTE: Although you might pass any SELECT or SHOW statement to this method, try to limit the result of the
      * statement to one single row, as the rest of the rows is simply discarded.
-     * 
+     *
      * IMPORTANT:
      * You are strongly encouraged to use prepared statements like this:
      * $result = Database::getDb->getOne(
@@ -130,11 +135,10 @@ interface DatabaseInterface
      *
      * @param string $sqlSelect      The sql select statement we want to execute.
      * @param array  $parameters     Array of parameters, for the given sql statement.
-     * @param bool   $executeOnSlave Execute this statement on the slave database. Only evaluated in a master-slave setup.
      *
      * @return array
      */
-    public function getRow($sqlSelect, $parameters = array(), $executeOnSlave = true);
+    public function getRow($sqlSelect, $parameters = array());
 
     /**
      * Return the first column of all rows of the results of a given sql SELECT or SHOW statement as an numeric array.
@@ -151,13 +155,12 @@ interface DatabaseInterface
      *
      * @param string $sqlSelect      The sql select statement
      * @param array  $parameters     The parameters array.
-     * @param bool   $executeOnSlave Execute this statement on the slave database. Only evaluated in a master-slave setup.
      *
      * @throws DatabaseException
      *
      * @return array The values of the first column of a corresponding sql query.
      */
-    public function getCol($sqlSelect, $parameters = array(), $executeOnSlave = true);
+    public function getCol($sqlSelect, $parameters = array());
 
     /**
      * Get an multi-dimensional array of arrays with the values of the all rows of a given sql SELECT or SHOW statement.
@@ -166,7 +169,7 @@ interface DatabaseInterface
      * The keys of the first level array are numeric.
      * The keys of the second level arrays may be numeric, strings or both, depending on the FETCH_MODE_* of the connection.
      * Set the desired fetch mode with DatabaseInterface::setFetchMode() before calling this method.
-     * 
+     *
      * IMPORTANT:
      * You are strongly encouraged to use prepared statements like this:
      * $result = Database::getDb->getAll(
@@ -178,7 +181,6 @@ interface DatabaseInterface
      *
      * @param string $query          If parameters are given, the "?" in the string will be replaced by the values in the array
      * @param array  $parameters     Array of parameters, for the given sql statement.
-     * @param bool   $executeOnSlave Execute this statement on the slave database. Only evaluated in a master-slave setup.
      *
      * @see DatabaseInterface::setFetchMode()
      * @see Doctrine::$fetchMode
@@ -188,7 +190,7 @@ interface DatabaseInterface
      *
      * @return array
      */
-    public function getAll($query, $parameters = array(), $executeOnSlave = true);
+    public function getAll($query, $parameters = array());
 
     /**
      * Return the results of a given sql SELECT or SHOW statement as a ResultSet.
@@ -209,13 +211,12 @@ interface DatabaseInterface
      *
      * @param string $sqlSelect      The sql select statement
      * @param array  $parameters     The parameters array.
-     * @param bool   $executeOnSlave Execute this statement on the slave database. Only evaluated in a master-slave setup.
      *
      * @throws DatabaseException The exception, that can occur while executing the sql statement.
      *
-     * @return DoctrineResultSet
+     * @return ResultSetInterface
      */
-    public function select($sqlSelect, $parameters = array(), $executeOnSlave = true);
+    public function select($sqlSelect, $parameters = array());
 
     /**
      * Return the results of a given sql SELECT or SHOW statement limited by a LIMIT clause as a ResultSet.
@@ -240,13 +241,12 @@ interface DatabaseInterface
      * @param int    $rowCount   Maximum number of rows to return
      * @param int    $offset     Offset of the first row to return
      * @param array  $parameters The parameters array.
-     * @param bool   $executeOnSlave Execute this statement on the slave database. Only evaluated in a master-slave setup.
      *
      * @throws DatabaseException The exception, that can occur while executing the sql statement.
      *
-     * @return DoctrineResultSet The result of the given query.
+     * @return ResultSetInterface The result of the given query.
      */
-    public function selectLimit($sqlSelect, $rowCount = -1, $offset = -1, $parameters = array(), $executeOnSlave = true);
+    public function selectLimit($sqlSelect, $rowCount = -1, $offset = -1, $parameters = array());
 
     /**
      * Execute read statements like SELECT or SHOW and return the results as a ResultSet.
@@ -299,7 +299,7 @@ interface DatabaseInterface
      * NOTE: It is not safe to use the return value of this function in a query. There will be no risk of SQL injection,
      * but when the statement is executed and the value could not have been quoted, a DatabaseException is thrown.
      * You are strongly encouraged to always use prepared statements instead of quoting the values on your own.
-     * 
+     *
      * @param array $array The strings to quote as an array.
      *
      * @return array Array with all string and numeric values quoted with single quotes or set to false, if the value could not have been quoted.

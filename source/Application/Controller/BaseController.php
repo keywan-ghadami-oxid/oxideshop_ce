@@ -128,6 +128,8 @@ class BaseController extends \oxView
     /**
      * Active recommendation's list
      *
+     * @deprecated since v5.3 (2016-06-17); Listmania will be moved to an own module.
+     *
      * @var oxRecommList
      */
     protected $_oActiveRecommList = null;
@@ -312,7 +314,9 @@ class BaseController extends \oxView
         'oxcmp_shop'       => 1,
         'oxcmp_categories' => 0,
         'oxcmp_utils'      => 1,
-        'oxcmp_news'       => 0,
+        // @deprecated since v.5.3.0 (2016-06-17); The Admin Menu: Customer Info -> News feature will be moved to a module in v6.0.0
+        'oxcmp_news' => 0,
+        // END deprecated
         'oxcmp_basket'     => 1
     );
 
@@ -372,7 +376,7 @@ class BaseController extends \oxView
     /** @var string Manufacturer id. */
     protected $_sManufacturerId = null;
 
-    /** @var bool Has user news subscribed. */
+    /** @var bool Has user newsletter subscribed. */
     protected $_blNewsSubscribed = null;
 
     /** @var oxAddress Delivery address. */
@@ -392,13 +396,6 @@ class BaseController extends \oxView
 
     /** @var array check all "must-be-fields" if they are completely. */
     protected $_aMustFillFields = null;
-
-    /**
-     * @var bool Show tags cloud.
-     *
-     * @deprecated v5.3 (2016-05-04); Tags will be moved to own module.
-     */
-    protected $_blShowTagCloud = true;
 
     /** @var bool If active root category was changed. */
     protected $_blRootCatChanged = false;
@@ -426,13 +423,6 @@ class BaseController extends \oxView
 
     /** @var integer Number of possible pages. */
     protected $_iCntPages = null;
-
-    /**
-     * @var stdClass Active tag.
-     *
-     * @deprecated v5.3 (2016-05-04); Tags will be moved to own module.
-     */
-    protected $_oActTag = null;
 
     /** @var string Form id. */
     protected $_sFormId = null;
@@ -1370,17 +1360,18 @@ class BaseController extends \oxView
         $params['ldtype'] = $this->getCustomListDisplayType();
         $params['actcontrol'] = $this->getClassName();
 
+        // @deprecated since v5.3 (2016-06-17); Listmania will be moved to an own module.
         $params['recommid'] = $config->getRequestParameter('recommid');
 
         $params['searchrecomm'] = $config->getRequestParameter('searchrecomm', true);
-        $params['searchparam'] = $config->getRequestParameter('searchparam', true);
-        // @deprecated v5.3 (2016-05-04); Tags will be moved to own module.
-        $params['searchtag'] = $config->getRequestParameter('searchtag', true);
         // END deprecated
+        $params['searchparam'] = $config->getRequestParameter('searchparam', true);
 
         $params['searchvendor'] = $config->getRequestParameter('searchvendor');
         $params['searchcnid'] = $config->getRequestParameter('searchcnid');
         $params['searchmanufacturer'] = $config->getRequestParameter('searchmanufacturer');
+
+        $params = array_merge($params, $this->getViewConfig()->getAdditionalNavigationParameters());
 
         return $params;
     }
@@ -1525,6 +1516,7 @@ class BaseController extends \oxView
 
         switch ($listType) {
             default:
+                $result .= $this->getViewConfig()->getDynUrlParameters($listType);
                 break;
             case 'search':
                 $result .= "&amp;listtype={$listType}";
@@ -1542,14 +1534,6 @@ class BaseController extends \oxView
                     $result .= '&amp;searchmanufacturer=' . rawurlencode(rawurldecode($var));
                 }
                 break;
-            // @deprecated v5.3 (2016-05-04); Will be moved to own module.
-            case 'tag':
-                $result .= "&amp;listtype={$listType}";
-                if ($param = rawurlencode($config->getRequestParameter('searchtag', true))) {
-                    $result .= "&amp;searchtag={$param}";
-                }
-                break;
-            // END deprecated
         }
 
         return $result;
@@ -1611,6 +1595,8 @@ class BaseController extends \oxView
     /**
      * Return array of id to form recommend list.
      * Should be overridden if need.
+     *
+     * @deprecated since v5.3 (2016-06-17); Listmania will be moved to an own module.
      *
      * @return array
      */
@@ -1698,14 +1684,14 @@ class BaseController extends \oxView
         if ($value = oxRegistry::getConfig()->getRequestParameter('searchrecomm')) {
             $url .= "&amp;searchrecomm={$value}";
         }
-        // @deprecated v5.3 (2016-05-04); Will be moved to own module.
-        if ($value = oxRegistry::getConfig()->getRequestParameter('searchtag')) {
-            $url .= "&amp;searchtag={$value}";
-        }
-        // END deprecated
+
+        // @deprecated since v5.3 (2016-06-17); Listmania will be moved to an own module.
         if ($value = oxRegistry::getConfig()->getRequestParameter('recommid')) {
             $url .= "&amp;recommid={$value}";
         }
+        // END deprecated
+
+        $url .= $this->getViewConfig()->addRequestParameters();
 
         return $url;
     }
@@ -1802,16 +1788,9 @@ class BaseController extends \oxView
     }
 
     /**
-     * Returns if tags will be edit
-     *
-     * @deprecated v5.3 (2016-05-04); Tags will be moved to own module.
-     */
-    public function getEditTags()
-    {
-    }
-
-    /**
      * Template variable getter. Returns search string
+     *
+     * @deprecated since v5.3 (2016-06-17); Listmania will be moved to an own module.
      */
     public function getRecommSearch()
     {
@@ -1826,6 +1805,8 @@ class BaseController extends \oxView
 
     /**
      * Template variable getter. Returns active recommendation lists
+     *
+     * @deprecated since v5.3 (2016-06-17); Listmania will be moved to an own module.
      *
      * @return oxRecommList
      */
@@ -1953,11 +1934,6 @@ class BaseController extends \oxView
             if (isset($searchParamForLink)) {
                 $this->_sAdditionalParams .= "&amp;searchparam={$searchParamForLink}";
             }
-            // @deprecated v5.3 (2016-05-04); Will be moved to own module.
-            if (($value = oxRegistry::getConfig()->getRequestParameter('searchtag'))) {
-                $this->_sAdditionalParams .= '&amp;searchtag=' . rawurlencode(rawurldecode($value));
-            }
-            // END deprecated
             if (($value = oxRegistry::getConfig()->getRequestParameter('searchcnid'))) {
                 $this->_sAdditionalParams .= '&amp;searchcnid=' . rawurlencode(rawurldecode($value));
             }
@@ -1973,6 +1949,8 @@ class BaseController extends \oxView
             if (($value = oxRegistry::getConfig()->getRequestParameter('mnid'))) {
                 $this->_sAdditionalParams .= '&amp;mnid=' . rawurlencode(rawurldecode($value));
             }
+
+            $this->_sAdditionalParams .= $this->getViewConfig()->getAdditionalParameters();
         }
 
         return $this->_sAdditionalParams;
@@ -2187,34 +2165,6 @@ class BaseController extends \oxView
         }
 
         return $this->_iActPage;
-    }
-
-    /**
-     * Active tag info object getter. Object properties:
-     *  - sTag current tag
-     *  - link link leading to tag article list
-     *
-     * @deprecated v5.3 (2016-05-04); Tags will be moved to own module.
-     *
-     * @return stdClass
-     */
-    public function getActTag()
-    {
-        if ($this->_oActTag === null) {
-            $this->_oActTag = new stdClass();
-            $this->_oActTag->sTag = $tag = $this->getConfig()->getRequestParameter("searchtag", 1);
-            $seoEncoderTag = oxRegistry::get("oxSeoEncoderTag");
-
-            $link = false;
-            if (oxRegistry::getUtils()->seoIsActive()) {
-                $link = $seoEncoderTag->getTagUrl($tag, oxRegistry::getLang()->getBaseLanguage());
-            }
-
-            $constructedUrl = $this->getConfig()->getShopHomeURL() . $seoEncoderTag->getStdTagUri($tag, false);
-            $this->_oActTag->link = $link ? $link : $constructedUrl;
-        }
-
-        return $this->_oActTag;
     }
 
     /**
@@ -2998,18 +2948,6 @@ class BaseController extends \oxView
     public function isPriceCalculated()
     {
         return (bool) $this->getConfig()->getConfigParam('bl_perfLoadPrice');
-    }
-
-    /**
-     * Returns true if tags are ON
-     *
-     * @deprecated v5.3 (2016-05-04); Tags will be moved to own module.
-     *
-     * @return boolean
-     */
-    public function showTags()
-    {
-        return (bool) $this->_blShowTagCloud && $this->getConfig()->getConfigParam("blShowTags");
     }
 
     /**

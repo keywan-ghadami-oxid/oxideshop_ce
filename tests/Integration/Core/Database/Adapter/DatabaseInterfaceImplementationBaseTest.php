@@ -20,10 +20,10 @@
  * @version       OXID eShop CE
  */
 
-namespace OxidEsales\Eshop\Tests\Integration\Core\Database;
+namespace OxidEsales\Eshop\Tests\Integration\Core\Database\Adapter;
 
-use OxidEsales\Eshop\Core\Database\DatabaseInterface;
-use OxidEsales\Eshop\Core\Database\Doctrine;
+use OxidEsales\Eshop\Core\Database\Adapter\DatabaseInterface;
+use OxidEsales\Eshop\Core\Database\Adapter\Doctrine\Database;
 use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\TestingLibrary\UnitTestCase;
 
@@ -93,11 +93,6 @@ abstract class DatabaseInterfaceImplementationBaseTest extends UnitTestCase
      * Return the name of the database exception class
      */
     abstract protected function getResultSetClassName();
-
-    /**
-     * Return the name of the database exception class
-     */
-    abstract protected function getEmptyResultSetClassName();
 
     /**
      * Create the database object under test - the static pendant to use in the setUpBeforeClass and tearDownAfterClass.
@@ -264,7 +259,7 @@ abstract class DatabaseInterfaceImplementationBaseTest extends UnitTestCase
     /**
      * Remove all rows from the oxdoctrinetest table.
      *
-     * @return mixed|\object_ResultSet|\OxidEsales\Eshop\Core\Database\Adapter\DoctrineEmptyResultSet|\OxidEsales\Eshop\Core\Database\Adapter\DoctrineResultSet
+     * @return integer affected rows
      */
     protected function truncateTestTable()
     {

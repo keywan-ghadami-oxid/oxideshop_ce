@@ -233,15 +233,14 @@ class UtilsCount extends \oxSuperCfg
      *
      * @param string $query
      * @param array  $parameters
-     * @param bool   $executeOnSlave
      *
      * @return array
      */
-    protected function getAssoc($query, $parameters = array(), $executeOnSlave = true)
+    protected function getAssoc($query, $parameters = array())
     {
         $database = oxDb::getDb(oxDb::FETCH_MODE_ASSOC);
 
-        $resultSet = $database->select($query, $parameters, $executeOnSlave);
+        $resultSet = $database->select($query, $parameters);
 
         $rows = $resultSet->fetchAll();
 
@@ -331,7 +330,8 @@ class UtilsCount extends \oxSuperCfg
             $sTable = getViewName('oxcategories');
             $sSelect = "select $sTable.oxid from $sTable where " . (double) $iPrice . " >= $sTable.oxpricefrom and " . (double) $iPrice . " <= $sTable.oxpriceto ";
 
-            $rs = oxDb::getDb()->select($sSelect, false, false);
+            // We force reading from master to prevent issues with slow replications or open transactions (see ESDEV-3804).
+            $rs = oxDb::getMaster()->select($sSelect, false);
             if ($rs != false && $rs->count() > 0) {
                 while (!$rs->EOF) {
                     if (isset($aCatData[$rs->fields[0]])) {
@@ -344,32 +344,6 @@ class UtilsCount extends \oxSuperCfg
                 $this->_setCatCache($aCatData);
             }
         }
-    }
-
-    /**
-     * Returns specified Tag article count
-     *
-     * @param string $sTag  tag to search article count
-     * @param int    $iLang language
-     *
-     * @deprecated v5.3 (2016-05-04); Tags will be moved to own module.
-     *                      
-     * @return int
-     */
-    public function getTagArticleCount($sTag, $iLang)
-    {
-        $oDb = oxDb::getDb();
-
-        $oArticle = oxNew("oxArticle");
-        $sArticleTable = $oArticle->getViewName();
-        $sActiveSnippet = $oArticle->getSqlActiveSnippet();
-        $sViewName = getViewName('oxartextends', $iLang);
-
-        $sQ = "select count(*) from {$sViewName} inner join {$sArticleTable} on " .
-              "{$sArticleTable}.oxid = {$sViewName}.oxid where {$sArticleTable}.oxparentid = '' and {$sArticleTable}.oxissearch = 1 AND match ( {$sViewName}.oxtags ) " .
-              "against( " . $oDb->quote("\"" . $sTag . "\"") . " IN BOOLEAN MODE ) and {$sActiveSnippet}";
-
-        return $oDb->getOne($sQ);
     }
 
     /**

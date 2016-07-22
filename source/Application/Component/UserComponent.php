@@ -644,7 +644,7 @@ class UserComponent extends \oxView
             if (($blOptin = oxRegistry::getConfig()->getRequestParameter('blnewssubscribed')) === null) {
                 $blOptin = $oUser->getNewsSubscription()->getOptInStatus();
             }
-            // check if email address changed, if so, force check news subscription settings.
+            // check if email address changed, if so, force check newsletter subscription settings.
             $sBillingUsername = $aInvAdress['oxuser__oxusername'];
             $blForceCheckOptIn = ($sBillingUsername !== null && $sBillingUsername !== $sUserName);
             $blEmailParam = $this->getConfig()->getConfigParam('blOrderOptInEmail');
@@ -698,6 +698,7 @@ class UserComponent extends \oxView
     {
         if (is_array($aBillingAddress)) {
             $skipFields = array('oxuser__oxid', 'oxid', 'oxuser__oxpoints', 'oxpoints', 'oxuser__oxboni', 'oxboni');
+            $aBillingAddress = array_change_key_case($aBillingAddress);
             $aBillingAddress = array_diff_key($aBillingAddress, array_flip($skipFields));
         }
         return $aBillingAddress;
@@ -714,6 +715,7 @@ class UserComponent extends \oxView
     {
         if (is_array($aDeliveryAddress)) {
             $skipFields = array('oxaddress__oxid', 'oxid', 'oxaddress__oxuserid', 'oxuserid', 'oxaddress__oxaddressuserid', 'oxaddressuserid');
+            $aDeliveryAddress = array_change_key_case($aDeliveryAddress);
             $aDeliveryAddress = array_diff_key($aDeliveryAddress, array_flip($skipFields));
         }
         return $aDeliveryAddress;
@@ -774,9 +776,11 @@ class UserComponent extends \oxView
         if ($sParam = $oConfig->getRequestParameter('oxloadid')) {
             $sLogoutLink .= '&amp;oxloadid=' . $sParam;
         }
+        // @deprecated since v5.3 (2016-06-17); Listmania will be moved to an own module.
         if ($sParam = $oConfig->getRequestParameter('recommid')) {
             $sLogoutLink .= '&amp;recommid=' . $sParam;
         }
+        // END deprecated
 
         return $sLogoutLink . '&amp;fnc=logout';
     }

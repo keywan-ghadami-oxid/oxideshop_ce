@@ -19,16 +19,18 @@
  * @copyright (C) OXID eSales AG 2003-2016
  * @version       OXID eShop CE
  */
-namespace OxidEsales\Eshop\Core\Database\Adapter;
+
+namespace OxidEsales\Eshop\Core\Database\Adapter\Doctrine;
 
 use Doctrine\DBAL\Driver\Statement;
+use OxidEsales\Eshop\Core\Database\Adapter\ResultSetInterface;
 
 /**
  * The doctrine statement wrapper, to support the old adodblite interface.
  *
  * @package OxidEsales\Eshop\Core\Database\Adapter
  */
-class DoctrineResultSet implements \IteratorAggregate, ResultSetInterface
+class ResultSet implements \IteratorAggregate, ResultSetInterface
 {
 
     /**
@@ -126,9 +128,10 @@ class DoctrineResultSet implements \IteratorAggregate, ResultSetInterface
      */
     public function getIterator()
     {
-        $data = $this->fetchAll();
+        $this->close();
+        $this->getStatement()->execute();
 
-        return new \ArrayIterator($data);
+        return $this->getStatement();
     }
 
     /**

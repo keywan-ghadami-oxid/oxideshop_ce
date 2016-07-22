@@ -156,8 +156,9 @@ class UserPayment extends \oxBase
 
         //encode sensitive data
         if ($sValue = $this->oxuserpayments__oxvalue->value) {
-            $oDb = oxDb::getDb();
-            $sEncodedValue = $oDb->getOne("select encode( " . $oDb->quote($sValue) . ", '" . $this->getPaymentKey() . "' )", false, false);
+            // We force reading from master to prevent issues with slow replications or open transactions (see ESDEV-3804).
+            $masterDb = oxDb::getMaster();
+            $sEncodedValue = $masterDb->getOne("select encode( " . $masterDb->quote($sValue) . ", '" . $this->getPaymentKey() . "' )");
             $this->oxuserpayments__oxvalue->setValue($sEncodedValue);
         }
 
@@ -178,11 +179,13 @@ class UserPayment extends \oxBase
      */
     protected function _update()
     {
-        $oDb = oxDb::getDb();
 
         //encode sensitive data
         if ($sValue = $this->oxuserpayments__oxvalue->value) {
-            $sEncodedValue = $oDb->getOne("select encode( " . $oDb->quote($sValue) . ", '" . $this->getPaymentKey() . "' )", false, false);
+            // We force reading from master to prevent issues with slow replications or open transactions (see ESDEV-3804).
+            $masterDb = oxDb::getMaster();
+            
+            $sEncodedValue = $masterDb->getOne("select encode( " . $masterDb->quote($sValue) . ", '" . $this->getPaymentKey() . "' )");
             $this->oxuserpayments__oxvalue->setValue($sEncodedValue);
         }
 

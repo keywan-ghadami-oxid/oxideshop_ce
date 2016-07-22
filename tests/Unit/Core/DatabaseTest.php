@@ -25,16 +25,16 @@ use OxidEsales\Eshop\Core\ConfigFile;
 use OxidEsales\Eshop\Core\Database;
 use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\TestingLibrary\UnitTestCase;
+use ReflectionClass;
 
 /**
  * Class DbTest
- * TODO rename to DatabaseTest
  *
  * @group   database-adapter
  * @covers  OxidEsales\Eshop\Core\Database
  * @package Unit\Core
  */
-class DbTest extends UnitTestCase
+class DatabaseTest extends UnitTestCase
 {
 
     /**
@@ -48,6 +48,27 @@ class DbTest extends UnitTestCase
         $this->cleanUpTable('oxarticles');
 
         parent::tearDown();
+    }
+
+
+    /**
+     * Call a given protected method on an given instance of a class and return the result.
+     *
+     * @param object $classInstance Instance of the class on which the method will be called
+     * @param string $methodName    Name of the method to be called
+     * @param array  $params        Parameters of the method to be called
+     *
+     * @return mixed
+     */
+    protected function callProtectedClassMethod($classInstance, $methodName, array $params = array())
+    {
+        $className = get_class($classInstance);
+
+        $reflectionClass = new ReflectionClass($className);
+        $reflectionMethod = $reflectionClass->getMethod($methodName);
+        $reflectionMethod->setAccessible(true);
+
+        return $reflectionMethod->invokeArgs($classInstance, $params);
     }
 
     public function testSetConfig()
@@ -75,25 +96,26 @@ class DbTest extends UnitTestCase
     public function testGetTableDescription()
     {
         /** Reset the table description cache */
-        $this->setProtectedClassProperty(Database::getInstance(), 'tblDescCache', []);
+        $database = Database::getInstance();
+        $database->flushTableDescriptionCache();
 
-        $rs = Database::getDb()->select("show tables");
-        $icount = 3;
-        if ($rs != false && $rs->count() > 0) {
-            while (!$rs->EOF && $icount--) {
-                $sTable = $rs->fields[0];
+        $resultSet = Database::getDb()->select("SHOW TABLES");
+        $count = 3;
+        if ($resultSet != false && $resultSet->count() > 0) {
+            while (!$resultSet->EOF && $count--) {
+                $tableName = $resultSet->fields[0];
 
-                $amc = Database::getDb()->metaColumns($sTable);
-                $rmc1 = Database::getInstance()->getTableDescription($sTable);
-                $rmc2 = Database::getInstance()->getTableDescription($sTable);
+                $metaColumns = Database::getDb()->metaColumns($tableName);
+                $metaColumnOne = Database::getInstance()->getTableDescription($tableName);
+                $metaColumnOneCached = Database::getInstance()->getTableDescription($tableName);
 
-                $this->assertEquals($amc, $rmc1, "not cached return is bad [shouldn't be] of $sTable.");
-                $this->assertEquals($amc, $rmc2, "cached [simple] return is bad of $sTable.");
+                $this->assertEquals($metaColumns, $metaColumnOne, "not cached return is bad [shouldn't be] of $tableName.");
+                $this->assertEquals($metaColumns, $metaColumnOneCached, "cached [simple] return is bad of $tableName.");
 
-                $rs->fetchRow();
+                $resultSet->fetchRow();
             }
         } else {
-            $this->fail("no tables???");
+            $this->fail("No tables found with 'SHOW TABLES'!");
         }
     }
 
@@ -108,41 +130,14 @@ class DbTest extends UnitTestCase
     {
         $database = Database::getDb();
 
-        $this->assertInstanceOf('OxidEsales\Eshop\Core\Database\DatabaseInterface', $database);
+        $this->assertInstanceOf('OxidEsales\Eshop\Core\Database\Adapter\DatabaseInterface', $database);
     }
 
     public function testGetDbReturnsAnInstanceOfDoctrine()
     {
         $database = Database::getDb();
 
-        $this->assertInstanceOf('OxidEsales\Eshop\Core\Database\Doctrine', $database);
-    }
-
-    public function testGetDbThrowsDatabaseConnectionException()
-    {
-        /** Set an invalid config file */
-        $configFile = $this->getBlankConfigFile();
-        Registry::set('oxConfigFile', $configFile);
-        /** Reset the db property */
-        $this->setProtectedClassProperty(Database::getInstance(), 'db', null);
-
-        $this->setExpectedException('OxidEsales\Eshop\Core\Exception\DatabaseConnectionException');
-
-        Database::getDb();
-    }
-
-    public function testGetDbThrowsDatabaseNotConfiguredException()
-    {
-        /** Set an invalid config file */
-        $configFile = $this->getBlankConfigFile();
-        $configFile->setVar('dbHost', '<');
-        Registry::set('oxConfigFile', $configFile);
-        /** Reset the db property */
-        $this->setProtectedClassProperty(Database::getInstance(), 'db', null);
-
-        $this->setExpectedException('OxidEsales\Eshop\Core\Exception\DatabaseNotConfiguredException');
-
-        Database::getDb();
+        $this->assertInstanceOf('OxidEsales\Eshop\Core\Database\Adapter\Doctrine\Database', $database);
     }
 
     /**

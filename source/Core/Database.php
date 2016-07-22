@@ -21,8 +21,8 @@
  */
 namespace OxidEsales\Eshop\Core;
 
-use OxidEsales\Eshop\Core\Database\DatabaseInterface;
-use OxidEsales\Eshop\Core\Database\Doctrine as DatabaseAdapter;
+use OxidEsales\Eshop\Core\Database\Adapter\DatabaseInterface;
+use OxidEsales\Eshop\Core\Database\Adapter\Doctrine\Database as DatabaseAdapter;
 use OxidEsales\Eshop\Core\Exception\DatabaseConnectionException;
 use OxidEsales\Eshop\Core\Exception\DatabaseNotConfiguredException;
 
@@ -135,6 +135,24 @@ class Database
     }
 
     /**
+     * Return the database master connection instance as a singleton.
+     * In case the shop is not allowed a master/slave setup, this function
+     * is simply a wrapper for Database::getDb.
+     *
+     * @param int $fetchMode - fetch mode default numeric - 0
+     *
+     * @throws DatabaseConnectionException error while initiating connection to DB
+     *
+     * @return DatabaseInterface
+     */
+    public static function getMaster($fetchMode = Database::FETCH_MODE_NUM)
+    {
+        static::getDb($fetchMode)->forceMasterConnection();
+
+        return static::getDb($fetchMode);
+    }
+
+    /**
      * Sets class properties needed for a successful database connection
      *
      * @param ConfigFile $configFile The file config.inc.php wrapped in an object
@@ -159,6 +177,14 @@ class Database
         }
 
         return self::$tblDescCache[$tableName];
+    }
+
+    /**
+     * Flush the table description cache of this class.
+     */
+    public function flushTableDescriptionCache()
+    {
+        self::$tblDescCache = [];
     }
 
     /**
@@ -219,7 +245,7 @@ class Database
      */
     protected function setSqlMode()
     {
-        static::getDb()->execute('SET @@session.sql_mode = ""');
+        static::getDb()->executeSet('SET @@sql_mode = ""');
     }
 
     /**

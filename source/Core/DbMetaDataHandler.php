@@ -122,6 +122,67 @@ class DbMetaDataHandler extends oxSuperCfg
         return false;
     }
 
+    /**
+     * Get the indices of a table
+     *
+     * @param string $tableName The name of the table for which we want the 
+     *
+     * @return array The indices of the given table
+     */
+    public function getIndices($tableName)
+    {
+        $result = [];
+
+        if ($this->tableExists($tableName)) {
+            $result = oxDb::getDb(oxDb::FETCH_MODE_ASSOC)->getAll("SHOW INDEX FROM $tableName");
+        }
+
+        return $result;
+    }
+
+    /**
+     * Check, if the table has an index with the given name
+     * 
+     * @param string $indexName The name of the index we want to check
+     * @param string $tableName The table to check for the index
+     * 
+     * @return bool Has the table the given index?
+     */
+    public function hasIndex($indexName, $tableName)
+    {
+        $result = false;
+
+        foreach ($this->getIndices($tableName) as $index) {
+            if ($indexName === $index['Column_name']) {
+                $result = true;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get the index of a given table by its name
+     *
+     * @param string $indexName The name of the index
+     * @param string $tableName The name of the table from which we want the index
+     *
+     * @return null|array The index with the given name
+     */
+    public function getIndexByName($indexName, $tableName) 
+    {
+        $indices = $this->getIndices($tableName);
+
+        $result = null;
+
+        foreach ($indices as $index) {
+            if ($indexName === $index['Column_name']) {
+                $result = $index;
+            }
+        }
+
+        return $result;
+    }
 
     /**
      * Get all tables names from db. Views tables are not included in
@@ -376,7 +437,22 @@ class DbMetaDataHandler extends oxSuperCfg
     public function addNewMultilangField($table)
     {
         $newLang = $this->getNextLangId();
+
         $this->ensureMultiLanguageFields($table, $newLang);
+    }
+
+    /**
+     * Ensure, that all multi language fields of the given table are present.
+     *
+     * @param string $table The table we want to assure, that the multi language fields are present.
+     */
+    public function ensureAllMultiLanguageFields($table)
+    {
+        $max = $this->getCurrentMaxLangId();
+
+        for ($index = 1; $index <= $max; $index++) {
+            $this->ensureMultiLanguageFields($table, $index);
+        }
     }
 
     /**

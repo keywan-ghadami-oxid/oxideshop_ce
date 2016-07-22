@@ -291,7 +291,6 @@ $aLang = array(
 'GENERAL_SEO_CAT'                                          => '-- Kategorie --',
 'GENERAL_SEO_VND'                                          => '-- Lieferant --',
 'GENERAL_SEO_MANUFACTURER'                                 => '-- Hersteller --',
-'GENERAL_SEO_TAG'                                          => '-- Stichworte --',
 'GENERAL_SEO_MAINCAT'                                      => '(Hauptkategorie)', // product seo tab near main category title
 'GENERAL_SEO_NOCAT'                                        => '(keine Kategorie zugeordnet)',   // product seo tab, article ha no category assigned
 
@@ -404,7 +403,6 @@ $aLang = array(
 'ARTICLE_LIST_MENUSUBITEM'                                 => 'Artikel',
 'ARTICLE_MAIN_ERRORSAVINGARTICLE'                          => 'Warnung: Artikelnummer bereits vorhanden!',
 'ARTICLE_MAIN_PARENTNOTBUYABLE'                            => 'Achtung: Vaterartikel kann nicht gekauft werden.',
-'ARTICLE_MAIN_INVALIDTAGSFOUND'                            => 'Achtung: Unzulässige Tags wurden entfernt.',
 'ARTICLE_MAIN_ALDPRICE'                                    => 'Alt. Preise',
 'ARTICLE_MAIN_NONE'                                        => '-- keine --',
 'ARTICLE_MAIN_GOTO'                                        => 'Gehe zu',
@@ -423,7 +421,6 @@ $aLang = array(
 'ARTICLE_MAIN_TITLE'                                       => 'Titel',
 'ARTICLE_MAIN_ARTNUM'                                      => 'Art.-Nr.',
 'ARTICLE_MAIN_SEARCHKEYS'                                  => 'Suchbegriffe',
-'ARTICLE_MAIN_TAGS'                                        => 'Stichworte',
 'ARTICLE_MAIN_VENDORID'                                    => 'Lieferant',
 'ARTICLE_MAIN_PRICE'                                       => 'Preis',
 'ARTICLE_MAIN_SAVE'                                        => 'Speichern',
@@ -770,13 +767,15 @@ $aLang = array(
 'NAVIGATION_HOME'                                          => 'Home',
 'NAVIGATION_PAGE'                                          => 'Seite',
 'NAVIGATION_NEWVERSIONAVAILABLE'                           => 'Version %s ist verfügbar!',
-'NEWS_LIST_TITLE'                                          => '[OXID Newsverwaltung]',
-'NEWS_LIST_SHORTTEXT'                                      => 'Titel',
-'NEWS_LIST_MENUITEM'                                       => 'Kundeninformation',
-'NEWS_LIST_MENUSUBITEM'                                    => 'Nachrichten',
-'NEWS_MAIN_SHORTDESC'                                      => 'Titel',
-'NEWS_MAIN_SHOWFORGROUP'                                   => 'Sichtbar für Benutzergruppe',
-'NEWS_MAIN_NOTSHOWFORGROUP'                                => 'Nicht sichtbar für Benutzergruppe',
+// @deprecated since v.5.3.0 (2016-06-17); The Admin Menu: Customer Info -> News feature will be moved to a module in v6.0.0
+'NEWS_LIST_TITLE'           => '[OXID Newsverwaltung]',
+'NEWS_LIST_SHORTTEXT'       => 'Titel',
+'NEWS_LIST_MENUITEM'        => 'Kundeninformation',
+'NEWS_LIST_MENUSUBITEM'     => 'Nachrichten',
+'NEWS_MAIN_SHORTDESC'       => 'Titel',
+'NEWS_MAIN_SHOWFORGROUP'    => 'Sichtbar für Benutzergruppe',
+'NEWS_MAIN_NOTSHOWFORGROUP' => 'Nicht sichtbar für Benutzergruppe',
+// END deprecated
 'NAVIGATION_FAVORITES'                                     => 'Favoriten',
 'NAVIGATION_FAVORITES_EDIT'                                => '[ändern]',
 'FAVORITES_DESC'                                           => 'Beschreibung der Favoriten ...',
@@ -848,7 +847,9 @@ $aLang = array(
 'ORDER_REMARK_REMARK'                                      => '[Bem.]',
 'ORDER_REMARK_ORDER'                                       => '[Best.]',
 'ORDER_REMARK_USER'                                        => '[Reg.]',
-'ORDER_REMARK_NEWS'                                        => '[News]',
+// @deprecated since v.5.3.0 (2016-06-17); The Admin Menu: Customer Info -> News feature will be moved to a module in v6.0.0
+'ORDER_REMARK_NEWS' => '[News]',
+// END deprecated
 'ORDER_OVERVIEW_VATIDCHECKFAIL'                            => 'Umsatzsteuer-Identnummer Validierung fehlgeschlagen',
 'ORDER_OVERVIEW_VATID'                                     => 'Umsatzsteuer-Identnummer:',
 'ORDER_OVERVIEW_DELTYPE'                                   => 'Versandart',
@@ -1009,7 +1010,9 @@ $aLang = array(
 'SHOP_MALL_MALLINHERIT_OXDISCOUNT'                         => 'Alle <b>Rabatte</b> vom Elternshop erben',
 'SHOP_MALL_MALLINHERIT_OXLINKS'                            => 'Alle <b>Links</b> vom Elternshop erben',
 'SHOP_MALL_MALLINHERIT_OXVOUCHERSERIES'                    => 'Alle <b>Gutscheinserien</b> vom Elternshop erben',
-'SHOP_MALL_MALLINHERIT_OXNEWS'                             => 'Alle <b>Nachrichten</b> vom Elternshop erben',
+// @deprecated since v.5.3.0 (2016-06-17); The Admin Menu: Customer Info -> News feature will be moved to a module in v6.0.0
+'SHOP_MALL_MALLINHERIT_OXNEWS' => 'Alle <b>Nachrichten</b> vom Elternshop erben',
+// END deprecated
 'SHOP_MALL_MALLINHERIT_OXSELECTLIST'                       => 'Alle <b>Auswahllisten</b> vom Elternshop erben',
 'SHOP_MALL_MALLINHERIT_OXVENDOR'                           => 'Alle <b>Lieferanten</b> vom Elternshop erben',
 'SHOP_MALL_MALLINHERIT_OXMANUFACTURER'                     => 'Alle <b>Hersteller</b> vom Elternshop erben',
@@ -1140,7 +1143,6 @@ $aLang = array(
 'SHOP_CONFIG_POINTSFORINVITATION'                          => 'Bonuspunkte für neu geworbene Kunden',
 'SHOP_CONFIG_POINTSFORREGISTRATION'                        => 'Bonuspunkte für den Eingeladenen für die Registrierung',
 'SHOP_CONFIG_CONFIRMCOOKIE'                                => 'Kunden müssen der Verwendung von Cookies zustimmen',
-'SHOP_CONFIG_SHOWTAGS'                                     => 'Tags im eShop anzeigen',
 'SHOP_CONFIG_DOWNLOADS'                                    => 'Download-Artikel erlauben',
 'SHOP_CONFIG_DOWNLOADS_PATH'                               => 'Pfad zu den Dateien für Download-Artikel',
 'SHOP_CONFIG_DEBIT_OLD_BANK_INFORMATION_NOT_ALLOWED'       => 'Ausschließlich IBAN/BIC verwenden',
@@ -1374,7 +1376,9 @@ $aLang = array(
 'USER_REMARK_REMARK'                                       => '[Bem.]',
 'USER_REMARK_ORDER'                                        => '[Best.]',
 'USER_REMARK_USER'                                         => '[Reg.]',
-'USER_REMARK_NEWS'                                         => '[News]',
+// @deprecated since v.5.3.0 (2016-06-17); The Admin Menu: Customer Info -> News feature will be moved to a module in v6.0.0
+'USER_REMARK_NEWS' => '[News]',
+// END deprecated
 'USERGROUP_LIST_MENUITEM'                                  => 'Benutzer verwalten',
 'USERGROUP_LIST_MENUSUBITEM'                               => 'Benutzergruppen',
 'USERGROUP_MAIN_MEMBERINGROUP'                             => 'Mitglieder der Benutzergruppe',

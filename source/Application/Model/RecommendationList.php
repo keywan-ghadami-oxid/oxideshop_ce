@@ -31,6 +31,8 @@ use oxField;
 /**
  * Recommendation list manager class.
  *
+ * @deprecated since v5.3 (2016-06-17); Listmania will be moved to an own module.
+ *
  */
 class RecommendationList extends \oxBase implements \oxIUrl
 {
@@ -220,11 +222,12 @@ class RecommendationList extends \oxBase implements \oxIUrl
     {
         $blAdd = false;
         if ($sOXID) {
-            $oDb = oxDb::getDb();
-            if (!$oDb->getOne("select oxid from oxobject2list where oxobjectid=" . $oDb->quote($sOXID) . " and oxlistid=" . $oDb->quote($this->getId()), false, false)) {
+            // We force reading from master to prevent issues with slow replications or open transactions (see ESDEV-3804).
+            $masterDb = oxDb::getMaster();
+            if (!$masterDb->getOne("select oxid from oxobject2list where oxobjectid=" . $masterDb->quote($sOXID) . " and oxlistid=" . $masterDb->quote($this->getId()))) {
                 $sUid = oxUtilsObject::getInstance()->generateUID();
-                $sQ = "insert into oxobject2list ( oxid, oxobjectid, oxlistid, oxdesc ) values ( '$sUid', " . $oDb->quote($sOXID) . ", " . $oDb->quote($this->getId()) . ", " . $oDb->quote($sDesc) . " )";
-                $blAdd = $oDb->execute($sQ);
+                $sQ = "insert into oxobject2list ( oxid, oxobjectid, oxlistid, oxdesc ) values ( '$sUid', " . $masterDb->quote($sOXID) . ", " . $masterDb->quote($this->getId()) . ", " . $masterDb->quote($sDesc) . " )";
+                $blAdd = $masterDb->execute($sQ);
             }
         }
 

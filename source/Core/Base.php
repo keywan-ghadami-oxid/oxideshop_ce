@@ -794,7 +794,7 @@ class Base extends \oxSuperCfg
     }
 
     /**
-     * Delete this object from the database, returns true on success.
+     * Delete this object from the database, returns true if entry was deleted.
      *
      * @param string $oxid Object ID(default null)
      *
@@ -812,8 +812,8 @@ class Base extends \oxSuperCfg
         $database = oxDb::getDb(oxDb::FETCH_MODE_ASSOC);
         $coreTable = $this->getCoreTableName();
         $deleteQuery = "delete from {$coreTable} where oxid = " . $database->quote($oxid);
-        $database->execute($deleteQuery);
-        if ($blDelete = (bool) $database->affectedRows()) {
+        $affectedRows = $database->execute($deleteQuery);
+        if ($blDelete = (bool) $affectedRows) {
             $this->onChange(ACTION_DELETE, $oxid);
         }
 
@@ -913,10 +913,11 @@ class Base extends \oxSuperCfg
         }
 
         $viewName = $this->getCoreTableName();
-        $database = oxDb::getDb(oxDb::FETCH_MODE_ASSOC);
-        $query = "select {$this->_sExistKey} from {$viewName} where {$this->_sExistKey} = " . $database->quote($oxid);
+        // We force reading from master to prevent issues with slow replications or open transactions (see ESDEV-3804).
+        $masterDb = oxDb::getMaster(oxDb::FETCH_MODE_ASSOC);
+        $query = "select {$this->_sExistKey} from {$viewName} where {$this->_sExistKey} = " . $masterDb->quote($oxid);
 
-        return ( bool ) $database->getOne($query, false, false);
+        return ( bool ) $masterDb->getOne($query);
     }
 
     /**
@@ -1400,14 +1401,26 @@ class Base extends \oxSuperCfg
         $this->$idKey = new oxField($this->getId(), oxField::T_RAW);
         $database = oxDb::getDb();
 
-        $updateQuery = "update {$coreTableName} set " . $this->_getUpdateFields()
-                   . " where {$coreTableName}.oxid = " . $database->quote($this->getId());
+        $updateSql = "update {$coreTableName} set " . $this->_getUpdateFields() .
+                     " where {$coreTableName}.oxid = " . $database->quote($this->getId());
 
         $this->beforeUpdate();
 
-        $result = (bool) $database->execute($updateQuery);
+        $result = (bool) $this->executeDatabaseQuery($updateSql);
 
         return $result;
+    }
+
+    /**
+     * Execute a query on the database.
+     *
+     * @return int The number of affected rows.                     
+     */
+    protected function executeDatabaseQuery($query)
+    {
+        $database = Database::getDb();
+
+        return $database->execute($query);
     }
 
     /**
@@ -1419,7 +1432,6 @@ class Base extends \oxSuperCfg
      */
     protected function _insert()
     {
-        $database = oxDb::getDb(oxDb::FETCH_MODE_ASSOC);
         $myConfig = $this->getConfig();
         $myUtils = oxRegistry::getUtils();
 
@@ -1440,7 +1452,7 @@ class Base extends \oxSuperCfg
 
         $insertSql .= $this->_getUpdateFields($this->getUseSkipSaveFields());
 
-        $result = (bool) $database->execute($insertSql);
+        $result = (bool) $this->executeDatabaseQuery($insertSql);
 
         return $result;
     }
@@ -1574,4 +1586,5 @@ class Base extends \oxSuperCfg
         //because active from setting is based on minutes
         return 60;
     }
+
 }
