@@ -752,7 +752,15 @@ class Database implements DatabaseInterface
                  */
             case is_a($exception->getPrevious(), '\Exception') &&
                  in_array($exception->getPrevious()->getCode(), ['2003']):
+
                 $exceptionClass = 'OxidEsales\Eshop\Core\Exception\DatabaseConnectionException';
+                break;
+            case $exception instanceof ConnectionException:
+                $code = $exception->getCode();
+                $message = $exception->getMessage();
+
+                $exceptionClass = 'OxidEsales\Eshop\Core\Exception\DatabaseException';
+
                 break;
             case $exception instanceof DBALException:
                 /**
@@ -765,9 +773,9 @@ class Database implements DatabaseInterface
                 /** @var $pdoException PDOException */
                 $code = $pdoException->errorInfo[1];
                 $message = $pdoException->errorInfo[2];
-                
+
                 $exceptionClass = 'OxidEsales\Eshop\Core\Exception\DatabaseException';
-                
+
                 break;
             case $exception instanceof PDOException:
                 /**
@@ -777,9 +785,9 @@ class Database implements DatabaseInterface
                  */
                 $code = $exception->errorInfo[1];
                 $message = $exception->errorInfo[2];
-                
+
                 $exceptionClass = 'OxidEsales\Eshop\Core\Exception\DatabaseException';
-                
+
                 break;
             default:
                 $exceptionClass = 'OxidEsales\Eshop\Core\Exception\DatabaseException';
