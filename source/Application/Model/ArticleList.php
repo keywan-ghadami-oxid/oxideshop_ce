@@ -22,12 +22,11 @@
 
 namespace OxidEsales\Eshop\Application\Model;
 
+use Exception;
 use oxDb;
 use OxidEsales\Eshop\Core\Registry;
 use oxRegistry;
-use OxidEsales\Eshop\Core\Database;
 use OxidEsales\Eshop\Core\Database\Adapter\DatabaseInterface;
-use OxidEsales\Eshop\Core\Exception\DatabaseException;
 
 /**
  * Article list manager.
@@ -669,7 +668,7 @@ class ArticleList extends \oxList
         $sArticleTable = $oBaseObject->getViewName();
         $sArticleFields = $oBaseObject->getSelectFields();
 
-        $oxIdsSql = implode (',', Database::getDb()->quoteArray($aIds));
+        $oxIdsSql = implode (',', oxDb::getDb()->quoteArray($aIds));
 
         $sSelect = "select $sArticleFields from $sArticleTable ";
         $sSelect .= "where $sArticleTable.oxid in ( " . $oxIdsSql . " ) and ";
@@ -783,6 +782,8 @@ class ArticleList extends \oxList
      *
      * @param bool $blForceUpdate if true, forces price update without timeout check, default value is FALSE
      *
+     * @throws Exception
+     *
      * @return mixed
      */
     public function updateUpcomingPrices($blForceUpdate = false)
@@ -810,12 +811,13 @@ class ArticleList extends \oxList
                 if (!$blForceUpdate) {
                     $this->renewPriceUpdateTime();
                 }
-            } catch (DatabaseException $exception) {
+
+                $database->commitTransaction();
+            } catch (Exception $exception) {
                 $database->rollbackTransaction();
+
                 throw $exception;
             }
-
-            $database->commitTransaction();
 
             // recalculate oxvarminprice and oxvarmaxprice for parent
             if (is_array($aUpdatedArticleIds)) {
