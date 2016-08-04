@@ -66,12 +66,12 @@ class Object2Group extends \oxBase
     {
         try {
             return parent::save();
-            /**
-             * The table oxobject2group has an UNIQUE index on (OXOBJECTID, OXGROUPSID)
-             * If there is a DatabaseException and the exception code is 1062 i.e. "Duplicate entry",
-             * the exception will be discarded and the record will not be inserted
-             */
         } catch (DatabaseException $exception) {
+            /**
+             * The table oxobject2group has an UNIQUE index on (OXGROUPSID, OXOBJECTID, OXSHOPID)
+             * If there is a DatabaseException and the exception code is 1062 i.e. "Duplicate entry",
+             * the exception will be discarded and the record will not be inserted.
+             */
             if ($exception->getCode() != '1062') {
                 throw $exception;
             }
