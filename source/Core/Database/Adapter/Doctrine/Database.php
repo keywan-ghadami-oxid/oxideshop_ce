@@ -160,6 +160,7 @@ class Database implements DatabaseInterface
     public function closeConnection()
     {
         $this->connection->close();
+        gc_collect_cycles();
     }
 
     /**
@@ -979,6 +980,19 @@ class Database implements DatabaseInterface
         }
 
         return $result;
+    }
+
+    /**
+     * Return true, if the connection is marked rollbackOnly.
+     *
+     * Doctrine manages nested transaction the following way:
+     * If any of the inner transactions is rolled back, all the outer transactions will have to be rolled back also.
+     * For that reason the connection will be marked as rollbackOnly and any commitTransaction will throw an exception.
+     *
+     * @return bool
+     */
+    public function isRollbackOnly() {
+        return $this->connection->isRollbackOnly();
     }
 
     /**
