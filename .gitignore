@@ -48,6 +48,8 @@
 /source/modules/oe/*
 !/source/modules/oe/vendormetadata.php
 !/source/modules/oe/invoicepdf
+!/source/modules/oe/moduleone
+!/source/modules/oe/moduletwo
 
 # Composer
 /vendor/
