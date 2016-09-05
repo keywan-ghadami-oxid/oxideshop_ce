@@ -336,7 +336,7 @@ class ClassMap extends \OxidEsales\Eshop\Core\Edition\ClassMap
             // END deprecated
             'newsletter' => 'OxidEsales\Eshop\Application\Controller\NewsletterController',
             'pricealarm' => 'OxidEsales\Eshop\Application\Controller\PriceAlarmController',
-
+            'newclass' =>  'OxidEsales\Eshop\Application\Controller\NewClass',
         ];
     }
 
