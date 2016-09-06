@@ -24,7 +24,7 @@ class oeModuleTwoNewClass extends oeModuleTwoNewClass_parent
 
     public function getCanonicalUrl()
     {
-        $canonicalUrl = parent::getCanonicalUrl() . '-ModuleTwo';
+        $canonicalUrl = parent::getCanonicalUrl();
 
         return $canonicalUrl;
     }

@@ -8,6 +8,9 @@
  * @copyright (C) John Doe 20162016
  */
 
+use OxidEsales\EshopAllVersions\Application\Model\NewClassModel;
+
+
 /**
  * Metadata version
  */
@@ -33,6 +36,8 @@ $aModule = array(
     'email'       => 'john@doe.com',
     'extend'      => array(
         'newclass' => 'oe/moduletwo/application/controller/oemoduletwonewclass',
+        // Todo The aim is to be able to NewClassModel::class => 'oe/moduletwo/application/model/oemoduletwonewclassmodel';
+        'newclassmodel' => 'oe/moduletwo/application/model/oemoduletwonewclassmodel',
     ),
     'files'       => array(
         'oemoduletwomodule' => 'oe/moduletwo/core/oemoduletwomodule.php',

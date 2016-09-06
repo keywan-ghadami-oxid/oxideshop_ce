@@ -33,6 +33,7 @@ $aModule = array(
     'email'       => 'john@doe.com',
     'extend'      => array(
         'newclass' => 'oe/moduleone/application/controller/oemoduleonenewclass',
+        'newclassmodel' => 'oe/moduleone/application/model/oemoduleonenewclassmodel',
     ),
     'files'       => array(
         'oemoduleonemodule' => 'oe/moduleone/core/oemoduleonemodule.php',

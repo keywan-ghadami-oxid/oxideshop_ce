@@ -49,6 +49,9 @@ registerComposerAutoload();
 $oConfigFile = new ConfigFile(OX_BASE_PATH . "config.inc.php");
 Registry::set("oxConfigFile", $oConfigFile);
 
+class_alias('OxidEsales\EshopEnterprise\Application\Model\NewClassModel', 'OxidEsales\EshopAllVersions\Application\Model\NewClassModel');
+class_alias('OxidEsales\EshopEnterprise\Application\Model\NewClassModel', 'newclassmodel');
+
 registerModuleDependenciesAutoload();
 registerShopAutoLoad();
 registerModuleAutoload();

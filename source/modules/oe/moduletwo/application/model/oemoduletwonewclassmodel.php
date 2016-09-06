@@ -19,14 +19,12 @@
  * @copyright (C) OXID eSales AG 2003-2016
  * @version       OXID eShop CE
  */
-// use OxidEsales\EshopAllVersions\Application\Model\NewClassModel;
-
-class oeModuleOneNewClass extends oeModuleOneNewClass_parent
+class oeModuleTwoNewClassModel extends oeModuleTwoNewClassModel_parent
 {
 
     public function getCanonicalUrl()
     {
-        $canonicalUrl = parent::getCanonicalUrl();
+        $canonicalUrl = parent::getCanonicalUrl() . '-ModuleTwo';
 
         return $canonicalUrl;
     }
