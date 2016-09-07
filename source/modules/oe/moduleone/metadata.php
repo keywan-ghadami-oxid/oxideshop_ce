@@ -8,6 +8,8 @@
  * @copyright (C) John Doe 20162016
  */
 
+use OxidEsales\EshopAllVersions\Application\Model\NewClassModel;
+
 /**
  * Metadata version
  */
@@ -32,8 +34,8 @@ $aModule = array(
     'url'         => 'www.johndoe.com',
     'email'       => 'john@doe.com',
     'extend'      => array(
-        'newclass' => 'oe/moduleone/application/controller/oemoduleonenewclass',
-        'newclassmodel' => 'oe/moduleone/application/model/oemoduleonenewclassmodel',
+        'newclass'           => 'oe/moduleone/application/controller/oemoduleonenewclass',
+        NewClassModel::class => 'oe/moduleone/application/model/oemoduleonenewclassmodel',
     ),
     'files'       => array(
         'oemoduleonemodule' => 'oe/moduleone/core/oemoduleonemodule.php',

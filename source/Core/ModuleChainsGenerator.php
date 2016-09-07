@@ -62,8 +62,8 @@ class ModuleChainsGenerator
         $modules = (array) $variablesLocator->getModuleVariable('aModules');
         $modules = array_change_key_case($modules);
 
-        if (array_key_exists($classAlias, $modules)) {
-            $fullChain = explode("&", $modules[$classAlias]);
+        if (array_key_exists(strtolower($classAlias), $modules)) {
+            $fullChain = explode("&", $modules[strtolower($classAlias)]);
             $activeChain = $this->filterInactiveExtensions($fullChain);
 
             if (!empty($activeChain)) {
