@@ -349,13 +349,16 @@ class Controller extends Core
         $editionPathSelector = $this->getEditionPathProvider();
         $sqlDir = $editionPathSelector->getDatabaseSqlDirectory();
 
+        $baseEditionPathSelector = $this->getEditionPathProvider(EditionSelector::COMMUNITY);
+        $baseSqlDir = $baseEditionPathSelector->getDatabaseSqlDirectory();
+
         //setting database collation
         $iUtfMode = isset($aDB['iUtfMode']) ? ((int) $aDB['iUtfMode']) : 0;
         $oDb->setMySqlCollation($iUtfMode);
 
         try {
-            $oDb->queryFile("$sqlDir/database_schema.sql");
-            $oDb->queryFile("$sqlDir/initial_data.sql");
+            $oDb->queryFile("$baseSqlDir/database_schema.sql");
+            $oDb->queryFile("$baseSqlDir/initial_data.sql");
 
             /** @var ConfigFile $shopConfig */
             $shopConfig = Registry::get("oxConfigFile");
@@ -546,9 +549,9 @@ class Controller extends Core
     /**
      * @return EditionPathProvider
      */
-    protected function getEditionPathProvider()
+    protected function getEditionPathProvider($edition = null)
     {
-        $editionPathSelector = new EditionRootPathProvider(new EditionSelector(EditionSelector::COMMUNITY));
+        $editionPathSelector = new EditionRootPathProvider(new EditionSelector($edition));
         return new EditionPathProvider($editionPathSelector);
     }
 
