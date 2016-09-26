@@ -23,6 +23,8 @@
 namespace OxidEsales\Eshop\Setup;
 
 use Exception;
+use OxidEsales\Eshop\Core\ConfigFile;
+use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\Eshop\Core\Edition\EditionPathProvider;
 use OxidEsales\Eshop\Core\Edition\EditionRootPathProvider;
 use OxidEsales\Eshop\Core\Edition\EditionSelector;
@@ -354,6 +356,13 @@ class Controller extends Core
         try {
             $oDb->queryFile("$sqlDir/database_schema.sql");
             $oDb->queryFile("$sqlDir/initial_data.sql");
+
+            /** @var ConfigFile $shopConfig */
+            $shopConfig = Registry::get("oxConfigFile");
+            $vendorDir = $shopConfig->getVar('vendorDirectory');
+
+            exec("{$vendorDir}/bin/oe-eshop-facts oe-eshop-db_migrate");
+            exec("{$vendorDir}/bin/oe-eshop-facts oe-eshop-db_views_regenerate");
         } catch (Exception $oExcp) {
             $oView->setMessage($oExcp->getMessage());
 
@@ -539,7 +548,7 @@ class Controller extends Core
      */
     protected function getEditionPathProvider()
     {
-        $editionPathSelector = new EditionRootPathProvider(new EditionSelector());
+        $editionPathSelector = new EditionRootPathProvider(new EditionSelector(EditionSelector::COMMUNITY));
         return new EditionPathProvider($editionPathSelector);
     }
 
