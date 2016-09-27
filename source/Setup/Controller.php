@@ -547,6 +547,7 @@ class Controller extends Core
     }
 
     /**
+     * @param string $edition
      * @return EditionPathProvider
      */
     protected function getEditionPathProvider($edition = null)
