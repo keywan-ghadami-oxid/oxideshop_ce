@@ -1027,26 +1027,32 @@ class oxwArticleDetails extends oxWidget
         $oProduct = $this->getProduct();
 
         parent::render();
-
-        $oCategory = oxNew('oxCategory');
-
-        // if category parameter is not found, use category from product
-        $sCatId = $this->getViewParameter("cnid");
-
-        if (!$sCatId && $oProduct->getCategory()) {
-            $oCategory = $oProduct->getCategory();
-        } else {
-            $oCategory->load($sCatId);
-        }
         $this->_setSortingParameters();
 
-        $this->setActiveCategory($oCategory);
+        $p = $this->getConfig()->getTopActiveView();
+        $c = $p->getActiveCategory();
+        if ($c) {
+            $this->setActiveCategory($c);
+            $this->setCategoryTree($p->getCategoryTree());
+        } else {
+            $oCategory = oxNew('oxCategory');
 
-        /**
-         * @var $oLocator oxLocator
-         */
-        $oLocator = oxNew('oxLocator', $this->getListType());
-        $oLocator->setLocatorData($oProduct, $this);
+            // if category parameter is not found, use category from product
+            $sCatId = $this->getViewParameter("cnid");
+
+            if (!$sCatId && $oProduct->getCategory()) {
+                $oCategory = $oProduct->getCategory();
+            } else {
+                $oCategory->load($sCatId);
+            }
+            $this->setActiveCategory($oCategory);
+
+            /**
+             * @var $oLocator oxLocator
+             */
+            $oLocator = oxNew('oxLocator', $this->getListType());
+            $oLocator->setLocatorData($oProduct, $this);
+        }
 
         return $this->_sThisTemplate;
 
