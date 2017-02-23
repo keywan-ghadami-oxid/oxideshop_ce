@@ -91,7 +91,7 @@ class oxUtilsObject
         if (!self::$_instance instanceof oxUtilsObject) {
 
             // allow modules
-            $oUtilsObject = new oxUtilsObject();
+            self::$_instance = $oUtilsObject = new oxUtilsObject();
             self::$_instance = $oUtilsObject->oxNew('oxUtilsObject');
         }
 
@@ -428,23 +428,17 @@ class oxUtilsObject
                 } elseif (!class_exists($sModuleClass)) {
                     // special case is when oxconfig class is extended: we cant call "_disableModule" as it requires valid config object
                     // but we can't create it as module class extending it does not exist. So we will use orginal oxConfig object instead.
-                    if ($sParentClass == "oxconfig") {
+                    if ($sParentClass == "oxconfig" || $sBaseModule == "oxconfig") {
                         $oConfig = $this->_getObject("oxconfig", 0, null);
                         oxRegistry::set("oxconfig", $oConfig);
                     }
 
-                    // disable module if extended class is not found
-                    $blDisableModuleOnError = !oxRegistry::get("oxConfigFile")->getVar("blDoNotDisableModuleOnError");
-                    if ($blDisableModuleOnError) {
-                        $this->_disableModule($sModule);
-                    } else {
-                        //to avoid problems with unitest and only throw a exception if class does not exists MAFI
-                        /** @var oxSystemComponentException $oEx */
-                        $oEx = oxNew("oxSystemComponentException");
-                        $oEx->setMessage("EXCEPTION_SYSTEMCOMPONENT_CLASSNOTFOUND");
-                        $oEx->setComponent($sModuleClass);
-                        throw $oEx;
-                    }
+                    //to avoid problems with unitest and only throw a exception if class does not exists MAFI
+                    /** @var oxSystemComponentException $oEx */
+                    $oEx = oxNew("oxSystemComponentException");
+                    $oEx->setMessage("EXCEPTION_SYSTEMCOMPONENT_CLASSNOTFOUND");
+                    $oEx->setComponent($sModuleClass);
+                    $oEx->debugOut();
                     continue;
                 }
             }
