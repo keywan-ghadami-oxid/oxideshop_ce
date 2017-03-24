@@ -254,15 +254,14 @@ class ModuleChainsGenerator
      */
     protected function onModuleExtensionCreationError($classExtension, $moduleClass)
     {
-        $disableModuleOnError = !oxRegistry::get("oxConfigFile")->getVar("blDoNotDisableModuleOnError");
-        if ($disableModuleOnError) {
-            $this->disableModule($classExtension);
-        } else {
             $exception = oxNew("oxSystemComponentException");
             $exception->setMessage("EXCEPTION_SYSTEMCOMPONENT_CLASSNOTFOUND");
             $exception->setComponent($moduleClass);
-            throw $exception;
-        }
+            $exception->debugOut();
+            $stopOnModuleExtensionCreationError = oxRegistry::get("oxConfigFile")->getVar("blStopOnModuleExtensionCreationError");
+            if ($stopOnModuleExtensionCreationError) {
+                throw $exception;
+            }
     }
 
     /**
