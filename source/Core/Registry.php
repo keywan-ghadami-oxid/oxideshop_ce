@@ -320,7 +320,7 @@ class Registry
     public static function getLogger()
     {
         if (!self::instanceExists('logger')) {
-            self::set('logger', getLogger());
+            self::set('logger', \getLogger());
         }
         return self::get('logger');
     }
